@@ -35,7 +35,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { curriculum, formulas } from "@/content/curriculum";
+import { curriculum } from "@/content/curriculum";
 import {
   generateQuestion,
   generateSet,
@@ -46,6 +46,8 @@ import { copy, type Language } from "@/lib/i18n";
 import { lessonFormulaTex } from "@/content/lesson-details";
 import { FunctionLab } from "./function-lab";
 import { MathFormula } from "./math";
+import { MathFlashcards } from "./math-flashcards";
+import { AssessmentSummary } from "./assessment-summary";
 
 export type View =
   | "home"
@@ -88,17 +90,6 @@ const initialProgress: Progress = {
   completedLessons: ["sets-intervals", "powers-roots", "identities"],
   answered: 12,
   correct: 9,
-};
-
-const formulaTex: Record<string, string> = {
-  quadratic: "x_{1,2}=\\frac{-b\\pm\\sqrt{\\Delta}}{2a}",
-  identity: "(a+b)^2=a^2+2ab+b^2",
-  arith: "a_n=a_1+(n-1)r",
-  geom: "a_n=a_1\\cdot q^{n-1}",
-  trig: "\\sin^2\\alpha+\\cos^2\\alpha=1",
-  circle: "(x-a)^2+(y-b)^2=r^2",
-  prob: "P(A)=\\frac{|A|}{|\\Omega|}",
-  compound: "K_n=K_0(1+p)^n",
 };
 
 function readLocal<T>(key: string, fallback: T): T {
@@ -213,7 +204,7 @@ export function MathApp({
           <Logo />
           <span>
             <b>Mathly</b>
-            <small>LEARN • SOLVE • MASTER</small>
+            <small>{lang === "pl" ? "UCZ SIĘ • ROZWIĄZUJ • OPANUJ" : "LEARN • SOLVE • MASTER"}</small>
           </span>
         </button>
 
@@ -227,7 +218,7 @@ export function MathApp({
             >
               {item.icon}
               <span>{item.label}</span>
-              {(["tasks", "tests", "exam"] as View[]).includes(item.id) && <em>NEW</em>}
+              {(["tasks", "tests", "exam"] as View[]).includes(item.id) && <em>{lang === "pl" ? "NOWE" : "NEW"}</em>}
             </button>
           ))}
         </nav>
@@ -240,13 +231,17 @@ export function MathApp({
           </div>
           <div className="settings">
             <button
-              aria-label={lang === "pl" ? "Switch to English" : "Przełącz na polski"}
+              aria-label={lang === "pl" ? "Przełącz na angielski" : "Switch to Polish"}
               onClick={switchLanguage}
             >
               <Languages size={16} /> {lang.toUpperCase()}
             </button>
             <button
-              aria-label={theme === "dark" ? "Light mode" : "Dark mode"}
+              aria-label={
+                theme === "dark"
+                  ? lang === "pl" ? "Włącz jasny motyw" : "Enable light mode"
+                  : lang === "pl" ? "Włącz ciemny motyw" : "Enable dark mode"
+              }
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
@@ -286,7 +281,7 @@ export function MathApp({
             />
           )}
           {view === "knowledge" && <Knowledge lang={lang} />}
-          {view === "formulas" && <FormulaCards lang={lang} />}
+          {view === "formulas" && <MathFlashcards lang={lang} />}
           {view === "tasks" && (
             <Practice
               lang={lang}
@@ -462,7 +457,7 @@ function Home({
           {[
             [tr.nav.path, next.lesson.title[lang], "12 min", "path"],
             [tr.nav.tasks, lang === "pl" ? "4 zadania" : "4 problems", "15 min", "tasks"],
-            [tr.nav.formulas, lang === "pl" ? "8 fiszek" : "8 cards", "8 min", "formulas"],
+            [tr.nav.formulas, lang === "pl" ? "12 fiszek" : "12 cards", "8 min", "formulas"],
           ].map((item, index) => (
             <button key={String(item[3])} onClick={() => setView(item[3] as View)}>
               <span>{index + 1}</span>
@@ -760,147 +755,6 @@ function Knowledge({ lang }: { lang: Language }) {
   );
 }
 
-function FormulaCards({ lang }: { lang: Language }) {
-  const tr = copy[lang];
-  const [flipped, setFlipped] = useState<string[]>([]);
-
-  return (
-    <>
-      <PageHead
-        eyebrow="ACTIVE RECALL"
-        title={tr.flashcards}
-        text={
-          lang === "pl"
-            ? "Najpierw spróbuj odtworzyć wzór z pamięci. Dopiero potem odwróć kartę."
-            : "Recall the formula from memory first. Then flip the card."
-        }
-      />
-      <div className="flash-grid">
-        {formulas.map((card) => {
-          const isFlipped = flipped.includes(card.id);
-          return (
-            <button
-              key={card.id}
-              className={isFlipped ? "flash panel flipped" : "flash panel"}
-              onClick={() =>
-                setFlipped((items) =>
-                  items.includes(card.id)
-                    ? items.filter((id) => id !== card.id)
-                    : [...items, card.id],
-                )
-              }
-            >
-              <small>{curriculum.find((u) => u.id === card.unitId)?.title[lang]}</small>
-              <h3>{card.name[lang]}</h3>
-              {isFlipped ? (
-                <>
-                  <div className="flash-formula">
-                    <MathFormula tex={formulaTex[card.id] ?? card.formula} display />
-                  </div>
-                  <p>{card.note[lang]}</p>
-                </>
-              ) : (
-                <span className="flip-hint">{tr.flip}</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </>
-  );
-}
-
-function MathProblem({
-  question,
-  compact = false,
-}: {
-  question: GeneratedQuestion;
-  compact?: boolean;
-}) {
-  return (
-    <div className={compact ? "math-problem compact" : "math-problem"}>
-      <p>{question.lead}</p>
-      {question.math && <MathFormula tex={question.math} display />}
-      {question.tail && <p>{question.tail}</p>}
-    </div>
-  );
-}
-
-const practiceContext: Record<
-  string,
-  {
-    tip: Record<Language, string>;
-    curiosity: Record<Language, string>;
-    trap: Record<Language, string>;
-  }
-> = {
-  "real-numbers": {
-    tip: { pl: "Najpierw sprowadź potęgi do tej samej podstawy, dopiero potem licz.", en: "Bring powers to the same base before calculating." },
-    curiosity: { pl: "Logarytmy zamieniają mnożenie w dodawanie — dlatego przez stulecia przyspieszały obliczenia astronomiczne.", en: "Logarithms turn multiplication into addition, which is why they once sped up astronomical calculations." },
-    trap: { pl: "Nie dodawaj wykładników przy dodawaniu potęg — ta reguła działa tylko przy mnożeniu.", en: "Do not add exponents when adding powers; that rule only applies to multiplication." },
-  },
-  algebra: {
-    tip: { pl: "Szukaj wspólnego czynnika i wzorów skróconego mnożenia zanim zaczniesz rozwijać wszystko po kolei.", en: "Look for a common factor or an identity before expanding everything." },
-    curiosity: { pl: "Symboliczna algebra pozwala jednym wzorem opisać nieskończenie wiele konkretnych obliczeń.", en: "Symbolic algebra lets one formula describe infinitely many concrete calculations." },
-    trap: { pl: "W (a+b)² najczęściej gubi się środkowy składnik 2ab.", en: "The most common mistake in (a+b)² is forgetting the middle term 2ab." },
-  },
-  equations: {
-    tip: { pl: "Po rozwiązaniu równania podstaw wynik z powrotem — szybka kontrola często wychwytuje błąd znaku.", en: "Substitute your result back into the equation to catch sign errors." },
-    curiosity: { pl: "Wyróżnik Δ mówi nie tylko jak liczyć pierwiastki, ale też ile punktów przecięcia z osią X ma parabola.", en: "The discriminant Δ tells you both how to find roots and how many x-axis intersections a parabola has." },
-    trap: { pl: "Przy przenoszeniu wyrazu na drugą stronę pamiętaj o zmianie znaku.", en: "When moving a term across the equals sign, remember to change its sign." },
-  },
-  systems: {
-    tip: { pl: "Wybierz metodę, która najszybciej eliminuje jedną niewiadomą.", en: "Choose the method that eliminates one variable fastest." },
-    curiosity: { pl: "Geometrycznie rozwiązanie układu dwóch równań liniowych to punkt przecięcia dwóch prostych.", en: "Geometrically, solving two linear equations means finding where two lines intersect." },
-    trap: { pl: "Mnożąc całe równanie, pomnóż każdy jego składnik — także wyraz wolny.", en: "When multiplying an equation, multiply every term, including the constant." },
-  },
-  functions: {
-    tip: { pl: "Zawsze zacznij od dziedziny, potem miejsc zerowych i monotoniczności.", en: "Start with the domain, then zeros and monotonicity." },
-    curiosity: { pl: "Ten sam kształt wykresu może opisywać drogę, koszt, temperaturę albo wzrost populacji.", en: "The same graph shape can model distance, cost, temperature or population growth." },
-    trap: { pl: "Nie myl f(x) z iloczynem f·x — to wartość funkcji dla argumentu x.", en: "Do not read f(x) as f times x; it is the value of the function at x." },
-  },
-  sequences: {
-    tip: { pl: "Najpierw rozpoznaj: stała różnica oznacza ciąg arytmetyczny, stały iloraz — geometryczny.", en: "A constant difference means arithmetic; a constant ratio means geometric." },
-    curiosity: { pl: "Ciągi geometryczne pojawiają się m.in. w procencie składanym i modelach wzrostu.", en: "Geometric sequences appear in compound interest and growth models." },
-    trap: { pl: "We wzorze na aₙ występuje n−1, nie n.", en: "The nth-term formula uses n−1, not n." },
-  },
-  trigonometry: {
-    tip: { pl: "Zaznacz przeciwprostokątną i bok naprzeciw wybranego kąta zanim wybierzesz funkcję.", en: "Mark the hypotenuse and the side opposite the angle before choosing a ratio." },
-    curiosity: { pl: "Trygonometria pozwala mierzyć odległości, których nie da się zmierzyć bezpośrednio.", en: "Trigonometry can measure distances that cannot be measured directly." },
-    trap: { pl: "Sprawdź tryb kalkulatora: stopnie i radiany dają zupełnie inne wyniki.", en: "Check the calculator mode: degrees and radians give very different results." },
-  },
-  planimetry: {
-    tip: { pl: "Zanim liczysz, dopisz na rysunku wszystkie znane długości i kąty.", en: "Before calculating, label all known lengths and angles on the diagram." },
-    curiosity: { pl: "Podobieństwo figur jest podstawą skal map, modeli i wielu pomiarów pośrednich.", en: "Similarity underpins map scales, models and many indirect measurements." },
-    trap: { pl: "Przy zmianie skali k pola rosną k² razy, a nie k razy.", en: "If lengths scale by k, areas scale by k², not k." },
-  },
-  "analytic-geometry": {
-    tip: { pl: "Traktuj współrzędne jak dane do wzoru i pilnuj nawiasów przy liczbach ujemnych.", en: "Treat coordinates as formula inputs and use brackets around negative values." },
-    curiosity: { pl: "Geometria analityczna połączyła algebrę z geometrią w jeden język.", en: "Analytic geometry joined algebra and geometry into one language." },
-    trap: { pl: "W odległości punktów obie różnice współrzędnych są podnoszone do kwadratu.", en: "In the distance formula, both coordinate differences are squared." },
-  },
-  stereometry: {
-    tip: { pl: "Narysuj bryłę pomocniczo i zaznacz wysokość prostopadłą do podstawy.", en: "Sketch the solid and mark the height perpendicular to the base." },
-    curiosity: { pl: "Przekrój przestrzennej bryły często zamienia trudne zadanie 3D w zwykłą geometrię 2D.", en: "A cross-section often turns a hard 3D problem into ordinary 2D geometry." },
-    trap: { pl: "Nie myl wysokości ściany bocznej z wysokością całej bryły.", en: "Do not confuse a slant height with the solid's perpendicular height." },
-  },
-  combinatorics: {
-    tip: { pl: "Najpierw odpowiedz: czy kolejność ma znaczenie i czy elementy mogą się powtarzać?", en: "First ask whether order matters and whether repetition is allowed." },
-    curiosity: { pl: "Kombinatoryka stoi za liczeniem możliwości w kryptografii, algorytmach i prawdopodobieństwie.", en: "Combinatorics powers counting in cryptography, algorithms and probability." },
-    trap: { pl: "Kombinacji używamy, gdy kolejność nie ma znaczenia.", en: "Use combinations only when order does not matter." },
-  },
-  probability: {
-    tip: { pl: "Zdefiniuj przestrzeń wszystkich wyników zanim zaczniesz liczyć zdarzenie.", en: "Define the full sample space before counting the event." },
-    curiosity: { pl: "Prawdopodobieństwo 50% nie oznacza, że w dwóch próbach dokładnie raz zajdzie zdarzenie.", en: "A 50% probability does not mean an event must happen exactly once in two trials." },
-    trap: { pl: "Nie zakładaj jednakowego prawdopodobieństwa wyników, jeśli zadanie tego nie gwarantuje.", en: "Do not assume outcomes are equally likely unless the problem guarantees it." },
-  },
-  calculus: {
-    tip: { pl: "W optymalizacji najpierw zapisz wielkość, którą maksymalizujesz lub minimalizujesz jako funkcję jednej zmiennej.", en: "In optimisation, first express the quantity to maximise or minimise as a function of one variable." },
-    curiosity: { pl: "Pochodna opisuje chwilowe tempo zmiany — od prędkości auta po tempo wzrostu kosztu.", en: "A derivative describes an instantaneous rate of change, from vehicle speed to cost growth." },
-    trap: { pl: "Punkt, w którym pochodna jest równa zero, nie zawsze jest ekstremum.", en: "A point where the derivative is zero is not always an extremum." },
-  },
-};
-
 function Practice({
   lang,
   onOpenKnowledge,
@@ -1167,7 +1021,7 @@ function AssessmentIntro({
         <div><Clock3 size={24} /><b>{duration} min</b><span>{lang === "pl" ? "czas" : "time"}</span></div>
         <div><BookOpen size={24} /><b>{questionCount}</b><span>{lang === "pl" ? "zadań" : "problems"}</span></div>
         <div><BadgeCheck size={24} /><b>ABCD</b><span>{lang === "pl" ? "pytania zamknięte" : "multiple choice"}</span></div>
-        <div><Sparkles size={24} /><b>NEW</b><span>{lang === "pl" ? "zadania opisowe" : "word problems"}</span></div>
+        <div><Sparkles size={24} /><b>{lang === "pl" ? "OPIS" : "WORD"}</b><span>{lang === "pl" ? "zadania opisowe" : "word problems"}</span></div>
       </div>
 
       <div className="assessment-intro-checklist">
@@ -1265,7 +1119,7 @@ function Tests({
   return (
     <>
       <PageHead
-        eyebrow={lang === "pl" ? "SPRAWDŹ SIĘ • NEW: OPISOWE + ABCD" : "CHECKPOINTS • NEW: WORD + MCQ"}
+        eyebrow={lang === "pl" ? "SPRAWDŹ SIĘ • OPISOWE + ABCD" : "CHECKPOINTS • NEW: WORD + MCQ"}
         title={tr.classTests}
         text={
           lang === "pl"
@@ -1344,7 +1198,7 @@ function Exam({
     return (
       <>
         <PageHead
-          eyebrow={lang === "pl" ? "TRYB EGZAMINACYJNY • NEW: OPISOWE + ABCD" : "EXAM MODE • NEW: WORD + MCQ"}
+          eyebrow={lang === "pl" ? "TRYB EGZAMINACYJNY • OPISOWE + ABCD" : "EXAM MODE • NEW: WORD + MCQ"}
           title={tr.examTitle}
           text={
             lang === "pl"
@@ -1454,6 +1308,17 @@ function Assessment({
     });
   };
 
+  const submitAssessment = () => {
+    onFinish();
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const target = document.getElementById("assessment-top");
+        target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        target?.focus({ preventScroll: true });
+      });
+    });
+  };
+
   return (
     <div className="assessment-screen" id="assessment-top" tabIndex={-1}>
       <div className="assessment-toolbar">
@@ -1530,18 +1395,16 @@ function Assessment({
       </div>
 
       {result !== null && (
-        <div className="result panel">
-          <Trophy size={34} />
-          <b>{result}/{questions.length}</b>
-          <span>{Math.round((result / questions.length) * 100)}%</span>
-          <p>
-            {result / questions.length >= 0.75
-              ? lang === "pl" ? "Bardzo solidny wynik." : "Strong result."
-              : lang === "pl"
-                ? "Wróć do błędnych typów zadań i spróbuj ponownie."
-                : "Review missed problem types and try again."}
-          </p>
-        </div>
+        <AssessmentSummary
+          lang={lang}
+          questions={questions}
+          answers={answers}
+          onReviewPaper={() => {
+            document
+              .querySelector(".paper-viewport")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
       )}
 
       <div className="paper-viewport">
@@ -1550,7 +1413,7 @@ function Assessment({
             <header className="paper-header">
               <div className="paper-brand">
                 <span>Σ</span>
-                <div><b>MATHLY</b><small>ARKUSZ MATEMATYCZNY</small></div>
+                <div><b>MATHLY</b><small>{lang === "pl" ? "ARKUSZ MATEMATYCZNY" : "MATHEMATICS PAPER"}</small></div>
               </div>
               <div className="paper-meta">
                 <span>
@@ -1599,10 +1462,10 @@ function Assessment({
                           {question.kind === "mcq"
                             ? "ABCD"
                             : question.kind === "word"
-                              ? "OPISOWE"
+                              ? lang === "pl" ? "OPISOWE" : "WORD"
                               : lang === "pl" ? "OTWARTE" : "OPEN"}
                         </span>
-                        <b>{question.points} pkt</b>
+                        <b>{question.points} {lang === "pl" ? "pkt" : "pts"}</b>
                       </div>
                       <MathProblem question={question} />
 
@@ -1703,7 +1566,7 @@ function Assessment({
             {lang === "pl" ? "Następna strona" : "Next page"} <ChevronRight size={18} />
           </button>
         ) : result === null ? (
-          <button className="primary finish" onClick={onFinish}>
+          <button className="primary finish" onClick={submitAssessment}>
             {tr.finish} <CheckCircle2 size={18} />
           </button>
         ) : null}
@@ -1744,30 +1607,30 @@ function Profile({
       <section className="panel profile-card">
         <div className="big-avatar">M</div>
         <div>
-          <h2>Math Explorer</h2>
-          <p>{progress.xp} XP • Level {level}</p>
+          <h2>{lang === "pl" ? "Odkrywca matematyki" : "Math Explorer"}</h2>
+          <p>{progress.xp} XP • {lang === "pl" ? "Poziom" : "Level"} {level}</p>
           <div className="xp-bar">
             <i style={{ width: (progress.xp % 250) / 2.5 + "%" }} />
           </div>
         </div>
-        <span className="rank"><Trophy size={17} /> ALGEBRAIST</span>
+        <span className="rank"><Trophy size={17} /> {lang === "pl" ? "ALGEBRAIK" : "ALGEBRAIST"}</span>
       </section>
 
       <section className="stats">
         <Stat icon={<Flame />} label={tr.streak} value={String(progress.streak)} sub={lang === "pl" ? "dni z rzędu" : "consecutive days"} />
         <Stat icon={<BarChart3 />} label={tr.mastery} value={mastery + "%"} sub={progress.completedLessons.length + " " + (lang === "pl" ? "lekcji" : "lessons")} />
         <Stat icon={<Target />} label={lang === "pl" ? "Skuteczność" : "Accuracy"} value={accuracy + "%"} sub={progress.correct + "/" + progress.answered} />
-        <Stat icon={<Zap />} label={tr.xp} value={String(progress.xp)} sub={"Level " + level} />
+        <Stat icon={<Zap />} label={tr.xp} value={String(progress.xp)} sub={(lang === "pl" ? "Poziom " : "Level ") + level} />
       </section>
 
       <section className="panel achievements">
         <h3>{lang === "pl" ? "Osiągnięcia" : "Achievements"}</h3>
         <div>
           {[
-            ["🔥", "3 DAY", lang === "pl" ? "Trzy dni z rzędu" : "Three-day streak"],
-            ["∑", "FIRST STEPS", lang === "pl" ? "Pierwsze lekcje ukończone" : "First lessons completed"],
-            ["🎯", "ACCURATE", lang === "pl" ? "75%+ poprawnych odpowiedzi" : "75%+ correct answers"],
-            ["🏁", "EXAM READY", lang === "pl" ? "Ukończ próbny egzamin" : "Complete a mock exam"],
+            ["🔥", lang === "pl" ? "3 DNI" : "3 DAY", lang === "pl" ? "Trzy dni z rzędu" : "Three-day streak"],
+            ["∑", lang === "pl" ? "PIERWSZE KROKI" : "FIRST STEPS", lang === "pl" ? "Pierwsze lekcje ukończone" : "First lessons completed"],
+            ["🎯", lang === "pl" ? "CELNIE" : "ACCURATE", lang === "pl" ? "75%+ poprawnych odpowiedzi" : "75%+ correct answers"],
+            ["🏁", lang === "pl" ? "GOTOWY NA MATURĘ" : "EXAM READY", lang === "pl" ? "Ukończ próbny egzamin" : "Complete a mock exam"],
           ].map((item, index) => (
             <article
               className={index < 3 ? "achievement unlocked" : "achievement"}
