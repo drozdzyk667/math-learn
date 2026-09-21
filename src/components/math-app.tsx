@@ -16,6 +16,7 @@ import {
   Calculator,
   CheckCircle2,
   ChevronLeft,
+  CircleAlert,
   ChevronRight,
   CircleUserRound,
   Clock3,
@@ -1375,10 +1376,11 @@ function Assessment({
 }) {
   const tr = copy[lang];
   const pages = chunkQuestions(questions);
-  const [paperZoom, setPaperZoom] = useState(125);
+  const [paperZoom, setPaperZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(0);
+  const [showAbortConfirm, setShowAbortConfirm] = useState(false);
   const paperStyle = {
-    "--paper-scale": paperZoom / 100,
+    "--paper-scale": 1.4 * (paperZoom / 100),
   } as CSSProperties;
   const page = pages[currentPage] ?? [];
   const firstQuestionIndex = currentPage * 4;
@@ -1411,8 +1413,19 @@ function Assessment({
   return (
     <div className="assessment-screen" id="assessment-top" tabIndex={-1}>
       <div className="assessment-toolbar">
-        <button className="ghost" onClick={back}>
-          ← {lang === "pl" ? "Wróć" : "Back"}
+        <button
+          className={result === null ? "assessment-abort" : "ghost"}
+          onClick={() => {
+            if (result === null) {
+              setShowAbortConfirm(true);
+              return;
+            }
+            back();
+          }}
+        >
+          {result === null
+            ? lang === "pl" ? "Przerwij" : "Quit"
+            : lang === "pl" ? "← Wróć" : "← Back"}
         </button>
         <div>
           <span>
@@ -1422,15 +1435,24 @@ function Assessment({
           </span>
           <b>{title}</b>
         </div>
-        {timer !== undefined ? (
-          <b className="timer">
-            {String(Math.floor(timer / 60)).padStart(2, "0")}:
-            {String(timer % 60).padStart(2, "0")}
-          </b>
-        ) : (
-          <b className="timer">{durationLabel}</b>
-        )}
+        <span className="assessment-toolbar-spacer" aria-hidden="true" />
       </div>
+
+      {result === null && (
+        <div
+          className="assessment-floating-timer"
+          aria-label={lang === "pl" ? "Pozostały czas" : "Time remaining"}
+        >
+          <Clock3 size={17} />
+          <b>
+            {timer !== undefined
+              ? String(Math.floor(timer / 60)).padStart(2, "0") +
+                ":" +
+                String(timer % 60).padStart(2, "0")
+              : durationLabel}
+          </b>
+        </div>
+      )}
 
       <div className="paper-controls panel">
         <div
@@ -1440,8 +1462,8 @@ function Assessment({
         >
           <button
             type="button"
-            onClick={() => setPaperZoom((value) => Math.max(80, value - 10))}
-            disabled={paperZoom <= 80}
+            onClick={() => setPaperZoom((value) => Math.max(70, value - 10))}
+            disabled={paperZoom <= 70}
             aria-label={lang === "pl" ? "Pomniejsz arkusz" : "Zoom out"}
           >
             <ZoomOut size={21} />
@@ -1449,8 +1471,8 @@ function Assessment({
           <span aria-live="polite">{paperZoom}%</span>
           <button
             type="button"
-            onClick={() => setPaperZoom((value) => Math.min(150, value + 10))}
-            disabled={paperZoom >= 150}
+            onClick={() => setPaperZoom((value) => Math.min(120, value + 10))}
+            disabled={paperZoom >= 120}
             aria-label={lang === "pl" ? "Powiększ arkusz" : "Zoom in"}
           >
             <ZoomIn size={21} />
@@ -1637,6 +1659,55 @@ function Assessment({
           </section>
         </div>
       </div>
+
+      {showAbortConfirm && (
+        <div
+          className="assessment-dialog-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setShowAbortConfirm(false);
+            }
+          }}
+        >
+          <div
+            className="assessment-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="assessment-dialog-title"
+          >
+            <span className="assessment-dialog-icon">
+              <CircleAlert size={25} />
+            </span>
+            <div>
+              <span className="eyebrow">
+                {lang === "pl" ? "PRZERWANIE ARKUSZA" : "QUIT PAPER"}
+              </span>
+              <h2 id="assessment-dialog-title">
+                {lang === "pl"
+                  ? "Na pewno chcesz przerwać?"
+                  : "Are you sure you want to quit?"}
+              </h2>
+              <p>
+                {lang === "pl"
+                  ? "Twoje odpowiedzi z tego podejścia nie zostaną zaliczone. Możesz wrócić do arkusza i dokończyć go teraz."
+                  : "Answers from this attempt will not be counted. You can return to the paper and finish it now."}
+              </p>
+            </div>
+            <div className="assessment-dialog-actions">
+              <button
+                className="secondary"
+                onClick={() => setShowAbortConfirm(false)}
+              >
+                {lang === "pl" ? "Zostań i dokończ" : "Keep working"}
+              </button>
+              <button className="assessment-abort confirm" onClick={back}>
+                {lang === "pl" ? "Tak, przerwij" : "Yes, quit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="assessment-bottom-nav">
         <button
