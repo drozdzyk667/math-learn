@@ -38,26 +38,34 @@ export function MathFlashcards({ lang }: { lang: Language }) {
   const [filter, setFilter] = useState<DeckFilter>("all");
   const [unitId, setUnitId] = useState("all");
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoritesReady, setFavoritesReady] = useState(false);
   const [order, setOrder] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem("mathly-flashcard-favorites");
-    if (!raw) return;
-    try {
-      setFavoriteIds(JSON.parse(raw) as string[]);
-    } catch {
-      setFavoriteIds([]);
-    }
+    const frame = window.requestAnimationFrame(() => {
+      const raw = localStorage.getItem("mathly-flashcard-favorites");
+      if (raw) {
+        try {
+          setFavoriteIds(JSON.parse(raw) as string[]);
+        } catch {
+          setFavoriteIds([]);
+        }
+      }
+      setFavoritesReady(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
+    if (!favoritesReady) return;
     localStorage.setItem(
       "mathly-flashcard-favorites",
       JSON.stringify(favoriteIds),
     );
-  }, [favoriteIds]);
+  }, [favoriteIds, favoritesReady]);
 
   const favorites = useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
