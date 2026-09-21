@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -294,7 +293,7 @@ export function MathApp() {
                 setProgress((p) => ({
                   ...p,
                   xp: p.xp + score * 10,
-                  answered: p.answered + 8,
+                  answered: p.answered + 12,
                   correct: p.correct + score,
                 }))
               }
