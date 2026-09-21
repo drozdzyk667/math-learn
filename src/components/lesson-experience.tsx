@@ -101,11 +101,20 @@ export function LessonExperience({
       if (!data) return;
 
       const rewardKey = `mathly-lesson-rewards:${data.lesson.id}`;
+      const stepRewardKey = `mathly-lesson-steps:${data.lesson.id}`;
       try {
         const rewarded = localStorage.getItem(rewardKey);
         setRewardedTaskIds(rewarded ? (JSON.parse(rewarded) as string[]) : []);
       } catch {
         setRewardedTaskIds([]);
+      }
+      try {
+        const rewardedSteps = localStorage.getItem(stepRewardKey);
+        setAwardedSteps(
+          rewardedSteps ? (JSON.parse(rewardedSteps) as number[]) : [],
+        );
+      } catch {
+        setAwardedSteps([]);
       }
 
       setExample(generateQuestion(data.unit.id, lang, 1101, "quick"));
@@ -140,7 +149,12 @@ export function LessonExperience({
 
   const awardStep = (stepIndex: number) => {
     if (awardedSteps.includes(stepIndex)) return;
-    setAwardedSteps((items) => [...items, stepIndex]);
+    const nextSteps = [...awardedSteps, stepIndex];
+    setAwardedSteps(nextSteps);
+    localStorage.setItem(
+      `mathly-lesson-steps:${lesson.id}`,
+      JSON.stringify(nextSteps),
+    );
     setProgress((previous) => {
       const next = { ...previous, xp: previous.xp + 20 };
       saveProgress(next);
