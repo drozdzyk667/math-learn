@@ -1444,8 +1444,18 @@ function Assessment({
     setAnswers((current) => ({ ...current, [questionId]: value }));
   };
 
+  const goToPage = (nextPage: number) => {
+    const safePage = Math.max(0, Math.min(pages.length - 1, nextPage));
+    setCurrentPage(safePage);
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById("assessment-top");
+      target?.scrollIntoView({ behavior: "auto", block: "start" });
+      target?.focus({ preventScroll: true });
+    });
+  };
+
   return (
-    <div className="assessment-screen">
+    <div className="assessment-screen" id="assessment-top" tabIndex={-1}>
       <div className="assessment-toolbar">
         <button className="ghost" onClick={back}>
           ← {lang === "pl" ? "Wróć" : "Back"}
@@ -1505,18 +1515,14 @@ function Assessment({
           <button
             className="secondary"
             disabled={currentPage === 0}
-            onClick={() => setCurrentPage((pageNumber) => Math.max(0, pageNumber - 1))}
+            onClick={() => goToPage(currentPage - 1)}
           >
             <ChevronLeft size={18} /> {lang === "pl" ? "Wstecz" : "Back"}
           </button>
           <button
             className="primary"
             disabled={currentPage === pages.length - 1}
-            onClick={() =>
-              setCurrentPage((pageNumber) =>
-                Math.min(pages.length - 1, pageNumber + 1),
-              )
-            }
+            onClick={() => goToPage(currentPage + 1)}
           >
             {lang === "pl" ? "Dalej" : "Next"} <ChevronRight size={18} />
           </button>
@@ -1593,7 +1599,7 @@ function Assessment({
                           {question.kind === "mcq"
                             ? "ABCD"
                             : question.kind === "word"
-                              ? "NEW • OPISOWE"
+                              ? "OPISOWE"
                               : lang === "pl" ? "OTWARTE" : "OPEN"}
                         </span>
                         <b>{question.points} pkt</b>
@@ -1684,7 +1690,7 @@ function Assessment({
         <button
           className="secondary"
           disabled={currentPage === 0}
-          onClick={() => setCurrentPage((pageNumber) => Math.max(0, pageNumber - 1))}
+          onClick={() => goToPage(currentPage - 1)}
         >
           <ChevronLeft size={18} /> {lang === "pl" ? "Poprzednia strona" : "Previous page"}
         </button>
@@ -1692,11 +1698,7 @@ function Assessment({
         {currentPage < pages.length - 1 ? (
           <button
             className="primary"
-            onClick={() =>
-              setCurrentPage((pageNumber) =>
-                Math.min(pages.length - 1, pageNumber + 1),
-              )
-            }
+            onClick={() => goToPage(currentPage + 1)}
           >
             {lang === "pl" ? "Następna strona" : "Next page"} <ChevronRight size={18} />
           </button>
