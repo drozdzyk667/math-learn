@@ -1,43 +1,55 @@
 export type Locale = "pl" | "en";
+export type QuestionKind = "numeric" | "word" | "mcq";
+export type QuestionMode = "mixed" | "quick" | "word";
+
+export type QuestionOption = {
+  id: string;
+  label: string;
+  value: number;
+};
 
 export type GeneratedQuestion = {
   id: string;
   unitId: string;
+  kind: QuestionKind;
   lead: string;
-  math: string;
+  math?: string;
   tail?: string;
   answer: number;
   answerSuffix?: string;
+  options?: QuestionOption[];
   hint: string;
   hintMath?: string;
   solution: string;
   solutionMath?: string;
   difficulty: "easy" | "medium" | "hard";
+  points: number;
 };
 
 const int = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)];
-const t = (locale: Locale, pl: string, en: string) => (locale === "pl" ? pl : en);
-const signed = (value: number) => (value >= 0 ? `+ ${value}` : `- ${Math.abs(value)}`);
-const fact = (n: number) => Array.from({ length: n }, (_, i) => i + 1).reduce((a, b) => a * b, 1);
+const t = (locale: Locale, pl: string, en: string) =>
+  locale === "pl" ? pl : en;
+const signed = (value: number) =>
+  value >= 0 ? `+ ${value}` : `- ${Math.abs(value)}`;
+const fact = (n: number) =>
+  Array.from({ length: n }, (_, i) => i + 1).reduce((a, b) => a * b, 1);
+const tokenFor = (unitId: string, seed: number) =>
+  `${unitId}-${seed}-${Math.random().toString(36).slice(2, 7)}`;
 
-export function generateQuestion(
+function baseQuestion(
   unitId: string,
   locale: Locale,
-  seed = Date.now(),
+  token: string,
 ): GeneratedQuestion {
-  const token = `${unitId}-${seed}-${Math.random().toString(36).slice(2, 7)}`;
-
   if (unitId === "real-numbers") {
     const base = int(2, 8);
     const expA = int(2, 5);
     const expB = int(1, 4);
     const expC = expA + expB - 2;
     return {
-      id: token,
-      unitId,
-      difficulty: "easy",
+      id: token, unitId, kind: "numeric", difficulty: "easy", points: 1,
       lead: t(locale, "Oblicz wartość wyrażenia:", "Evaluate:"),
       math: `\\frac{${base}^{${expA}}\\cdot ${base}^{${expB}}}{${base}^{${expC}}}`,
       answer: base ** 2,
@@ -52,16 +64,14 @@ export function generateQuestion(
     const x = int(2, 7);
     const b = int(1, 6);
     return {
-      id: token,
-      unitId,
-      difficulty: "easy",
+      id: token, unitId, kind: "numeric", difficulty: "easy", points: 1,
       lead: t(locale, `Dla x = ${x} oblicz:`, `For x = ${x}, evaluate:`),
       math: `(x+${b})^2-x^2-${b ** 2}`,
       answer: 2 * x * b,
       hint: t(locale, "Użyj wzoru na kwadrat sumy.", "Use the square-of-a-sum identity."),
       hintMath: "(a+b)^2=a^2+2ab+b^2",
-      solution: t(locale, "Po rozwinięciu i redukcji wyrazów:", "Expand and simplify:"),
-      solutionMath: `(x+${b})^2-x^2-${b ** 2}=2\\cdot x\\cdot ${b}=2\\cdot ${x}\\cdot ${b}=${2 * x * b}`,
+      solution: t(locale, "Rozwiń nawias i zredukuj wyrazy podobne.", "Expand and simplify like terms."),
+      solutionMath: `(x+${b})^2-x^2-${b ** 2}=2\\cdot ${x}\\cdot ${b}=${2 * x * b}`,
     };
   }
 
@@ -71,9 +81,7 @@ export function generateQuestion(
     const sum = r1 + r2;
     const prod = r1 * r2;
     return {
-      id: token,
-      unitId,
-      difficulty: "medium",
+      id: token, unitId, kind: "numeric", difficulty: "medium", points: 2,
       lead: t(locale, "Podaj większy pierwiastek równania:", "Give the larger root of:"),
       math: `x^2${signed(-sum)}x${signed(prod)}=0`,
       answer: Math.max(r1, r2),
@@ -90,9 +98,7 @@ export function generateQuestion(
     const s = x + y;
     const d = x - y;
     return {
-      id: token,
-      unitId,
-      difficulty: "medium",
+      id: token, unitId, kind: "numeric", difficulty: "medium", points: 2,
       lead: t(locale, "Rozwiąż układ i podaj wartość x:", "Solve the system and give x:"),
       math: `\\begin{cases}x+y=${s}\\\\x-y=${d}\\end{cases}`,
       answer: x,
@@ -108,13 +114,11 @@ export function generateQuestion(
     const b = int(-6, 6);
     const x = int(-4, 5);
     return {
-      id: token,
-      unitId,
-      difficulty: "easy",
+      id: token, unitId, kind: "numeric", difficulty: "easy", points: 1,
       lead: t(locale, `Dla x = ${x} oblicz wartość funkcji:`, `For x = ${x}, evaluate:`),
       math: `f(x)=${a}x${signed(b)}`,
       answer: a * x + b,
-      hint: t(locale, "Podstaw podany argument w miejsce x.", "Substitute the given value for x."),
+      hint: t(locale, "Podstaw argument w miejsce x.", "Substitute the argument for x."),
       solution: t(locale, "Po podstawieniu:", "After substitution:"),
       solutionMath: `f(${x})=${a}\\cdot(${x})${signed(b)}=${a * x + b}`,
     };
@@ -126,9 +130,7 @@ export function generateQuestion(
     const n = int(5, 12);
     const answer = a1 + (n - 1) * r;
     return {
-      id: token,
-      unitId,
-      difficulty: "medium",
+      id: token, unitId, kind: "numeric", difficulty: "medium", points: 2,
       lead: t(locale, "Dany jest ciąg arytmetyczny:", "An arithmetic sequence is given:"),
       math: `a_1=${a1},\\qquad r=${r}`,
       tail: t(locale, `Oblicz a_${n}.`, `Find a_${n}.`),
@@ -144,14 +146,8 @@ export function generateQuestion(
     const triples = [[3, 4, 5], [5, 12, 13], [8, 15, 17]] as const;
     const [a, b, c] = pick([...triples]);
     return {
-      id: token,
-      unitId,
-      difficulty: "medium",
-      lead: t(
-        locale,
-        `W trójkącie prostokątnym przyprostokątne mają długości ${a} i ${b}. Oblicz przeciwprostokątną c.`,
-        `A right triangle has legs ${a} and ${b}. Find the hypotenuse c.`,
-      ),
+      id: token, unitId, kind: "numeric", difficulty: "medium", points: 2,
+      lead: t(locale, `W trójkącie prostokątnym przyprostokątne mają długości ${a} i ${b}. Oblicz przeciwprostokątną.`, `A right triangle has legs ${a} and ${b}. Find the hypotenuse.`),
       math: `c=\\sqrt{${a}^2+${b}^2}`,
       answer: c,
       hint: t(locale, "Zastosuj twierdzenie Pitagorasa.", "Use the Pythagorean theorem."),
@@ -166,17 +162,11 @@ export function generateQuestion(
     const h = int(3, 10);
     const answer = (base * h) / 2;
     return {
-      id: token,
-      unitId,
-      difficulty: "easy",
-      lead: t(
-        locale,
-        `Trójkąt ma podstawę a = ${base} i wysokość h = ${h}. Oblicz jego pole.`,
-        `A triangle has base a = ${base} and height h = ${h}. Find its area.`,
-      ),
+      id: token, unitId, kind: "numeric", difficulty: "easy", points: 1,
+      lead: t(locale, `Trójkąt ma podstawę ${base} i wysokość ${h}. Oblicz jego pole.`, `A triangle has base ${base} and height ${h}. Find its area.`),
       math: "P=\\frac{a\\cdot h}{2}",
       answer,
-      hint: t(locale, "Podstaw długość podstawy i wysokości do wzoru.", "Substitute the base and height into the formula."),
+      hint: t(locale, "Podstaw długość podstawy i wysokości.", "Substitute the base and height."),
       solution: t(locale, "Pole trójkąta wynosi:", "The area is:"),
       solutionMath: `P=\\frac{${base}\\cdot${h}}{2}=${answer}`,
     };
@@ -185,14 +175,10 @@ export function generateQuestion(
   if (unitId === "analytic-geometry") {
     const x1 = int(-5, 3);
     const y1 = int(-5, 3);
-    const pair = pick([[3, 4], [4, 3], [6, 8], [8, 6]] as const);
-    const [dx, dy] = pair;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const answer = Number(dist.toFixed(4));
+    const [dx, dy] = pick([[3, 4], [4, 3], [6, 8], [8, 6]] as const);
+    const answer = Number(Math.sqrt(dx * dx + dy * dy).toFixed(4));
     return {
-      id: token,
-      unitId,
-      difficulty: "medium",
+      id: token, unitId, kind: "numeric", difficulty: "medium", points: 2,
       lead: t(locale, "Oblicz odległość punktów:", "Find the distance between:"),
       math: `A=(${x1},${y1}),\\qquad B=(${x1 + dx},${y1 + dy})`,
       answer,
@@ -209,38 +195,25 @@ export function generateQuestion(
     const h = int(2, 8);
     const answer = a * b * h;
     return {
-      id: token,
-      unitId,
-      difficulty: "easy",
-      lead: t(
-        locale,
-        `Prostopadłościan ma wymiary ${a}, ${b} i ${h}. Oblicz jego objętość.`,
-        `A cuboid has side lengths ${a}, ${b} and ${h}. Find its volume.`,
-      ),
+      id: token, unitId, kind: "numeric", difficulty: "easy", points: 1,
+      lead: t(locale, `Prostopadłościan ma wymiary ${a}, ${b} i ${h}. Oblicz objętość.`, `A cuboid has side lengths ${a}, ${b} and ${h}. Find its volume.`),
       math: "V=a\\cdot b\\cdot h",
       answer,
-      hint: t(locale, "Pomnóż długość, szerokość i wysokość.", "Multiply length, width and height."),
+      hint: t(locale, "Pomnóż trzy wymiary bryły.", "Multiply the three dimensions."),
       solution: t(locale, "Objętość wynosi:", "The volume is:"),
       solutionMath: `V=${a}\\cdot${b}\\cdot${h}=${answer}`,
     };
   }
 
   if (unitId === "combinatorics") {
-    const n = int(5, 9);
+    const n = int(5, 8);
     const answer = fact(n);
     return {
-      id: token,
-      unitId,
-      difficulty: "medium",
-      lead: t(
-        locale,
-        `Na ile sposobów można ustawić ${n} różnych książek w jednym rzędzie?`,
-        `In how many ways can ${n} distinct books be arranged in one row?`,
-      ),
+      id: token, unitId, kind: "numeric", difficulty: "medium", points: 2,
+      lead: t(locale, `Na ile sposobów można ustawić ${n} różnych książek w jednym rzędzie?`, `In how many ways can ${n} distinct books be arranged in one row?`),
       math: `P_${n}=${n}!`,
       answer,
       hint: t(locale, "To permutacja wszystkich elementów.", "This is a permutation of all elements."),
-      hintMath: "P_n=n!",
       solution: t(locale, "Liczba ustawień to:", "The number of arrangements is:"),
       solutionMath: `${n}!=${answer}`,
     };
@@ -251,18 +224,11 @@ export function generateQuestion(
     const favourable = int(1, sides - 1);
     const answer = Number(((100 * favourable) / sides).toFixed(2));
     return {
-      id: token,
-      unitId,
-      difficulty: "easy",
-      lead: t(
-        locale,
-        `Mamy ${sides} jednakowo prawdopodobnych wyników, z czego ${favourable} są sprzyjające. Podaj prawdopodobieństwo w procentach.`,
-        `There are ${sides} equally likely outcomes and ${favourable} are favourable. Give the probability as a percentage.`,
-      ),
+      id: token, unitId, kind: "numeric", difficulty: "easy", points: 1,
+      lead: t(locale, `Mamy ${sides} jednakowo prawdopodobnych wyników, z czego ${favourable} są sprzyjające. Podaj prawdopodobieństwo w procentach.`, `There are ${sides} equally likely outcomes and ${favourable} are favourable. Give the probability as a percentage.`),
       math: "P(A)=\\frac{|A|}{|\\Omega|}",
-      answer,
-      answerSuffix: "%",
-      hint: t(locale, "Podziel liczbę wyników sprzyjających przez liczbę wszystkich wyników.", "Divide favourable outcomes by all outcomes."),
+      answer, answerSuffix: "%",
+      hint: t(locale, "Podziel liczbę wyników sprzyjających przez liczbę wszystkich.", "Divide favourable outcomes by all outcomes."),
       solution: t(locale, "Otrzymujemy:", "We get:"),
       solutionMath: `P(A)=\\frac{${favourable}}{${sides}}=${answer}\\%`,
     };
@@ -272,9 +238,7 @@ export function generateQuestion(
   const p = int(-6, 6);
   const q = int(-8, 8);
   return {
-    id: token,
-    unitId: "calculus",
-    difficulty: "medium",
+    id: token, unitId: "calculus", kind: "numeric", difficulty: "medium", points: 2,
     lead: t(locale, "Podaj najmniejszą wartość funkcji:", "Give the minimum value of:"),
     math: `f(x)=${a}(x-${p})^2${signed(q)}`,
     answer: q,
@@ -285,11 +249,247 @@ export function generateQuestion(
   };
 }
 
-export function generateSet(unitIds: string[], count: number, locale: Locale) {
+export function generateWordQuestion(
+  unitId: string,
+  locale: Locale,
+  seed = Date.now(),
+): GeneratedQuestion {
+  const token = tokenFor(unitId, seed);
+
+  if (unitId === "real-numbers") {
+    const price = pick([200, 320, 480, 600]);
+    const discount = pick([10, 20, 25]);
+    const answer = price * (1 - discount / 100);
+    return {
+      id: token, unitId, kind: "word", difficulty: "medium", points: 2,
+      lead: t(locale, `Kurtka kosztowała ${price} zł. W czasie promocji cenę obniżono o ${discount}%. Ile kosztuje po obniżce?`, `A jacket cost ${price}. Its price was reduced by ${discount}%. What is the new price?`),
+      math: `K=${price}\\left(1-\\frac{${discount}}{100}\\right)`,
+      answer,
+      answerSuffix: locale === "pl" ? " zł" : "",
+      hint: t(locale, "Najpierw policz, jaka część ceny pozostaje po obniżce.", "Find the fraction of the price that remains after the discount."),
+      solution: t(locale, "Po obniżce zostaje odpowiednia część ceny początkowej:", "The new price is the remaining fraction of the original price:"),
+      solutionMath: `K=${price}\\cdot${1 - discount / 100}=${answer}`,
+    };
+  }
+
+  if (unitId === "algebra") {
+    const w = int(4, 9);
+    const x = int(2, 5);
+    const answer = (w + x) * (w - 1);
+    return {
+      id: token, unitId, kind: "word", difficulty: "medium", points: 2,
+      lead: t(locale, `Prostokąt ma boki długości (a+${x}) oraz (a-1). Dla a=${w} oblicz jego pole.`, `A rectangle has sides (a+${x}) and (a-1). For a=${w}, find its area.`),
+      math: `P=(a+${x})(a-1)`,
+      answer,
+      hint: t(locale, "Najpierw oblicz długości obu boków.", "First calculate both side lengths."),
+      solution: t(locale, "Po podstawieniu wartości a:", "After substituting a:"),
+      solutionMath: `P=(${w}+${x})(${w}-1)=${answer}`,
+    };
+  }
+
+  if (unitId === "equations") {
+    const years = int(3, 8);
+    const age = int(14, 20);
+    const target = age + years;
+    return {
+      id: token, unitId, kind: "word", difficulty: "medium", points: 2,
+      lead: t(locale, `Olek ma dziś ${age} lat. Za ile lat będzie miał ${target} lat? Ułóż równanie i oblicz x.`, `Olek is ${age} years old today. In how many years will he be ${target}? Form an equation and find x.`),
+      math: `${age}+x=${target}`,
+      answer: years,
+      hint: t(locale, "Niewiadoma x oznacza liczbę lat, które upłyną.", "Let x be the number of years that pass."),
+      solution: t(locale, "Odejmujemy obecny wiek od wieku docelowego.", "Subtract the current age from the target age."),
+      solutionMath: `x=${target}-${age}=${years}`,
+    };
+  }
+
+  if (unitId === "systems") {
+    const adult = int(20, 35);
+    const student = int(10, 18);
+    const a = 2;
+    const s = 3;
+    const total = a * adult + s * student;
+    return {
+      id: token, unitId, kind: "word", difficulty: "hard", points: 3,
+      lead: t(locale, `Do kina kupiono 2 bilety normalne i 3 ulgowe za ${total} zł. Bilet normalny kosztuje ${adult} zł. Ile kosztuje bilet ulgowy?`, `Two adult and three student cinema tickets cost ${total}. An adult ticket costs ${adult}. What is the student ticket price?`),
+      math: `2\\cdot${adult}+3x=${total}`,
+      answer: student,
+      hint: t(locale, "Odejmij koszt biletów normalnych i podziel resztę przez 3.", "Subtract the adult-ticket cost and divide the remainder by 3."),
+      solution: t(locale, "Po uporządkowaniu równania:", "After rearranging the equation:"),
+      solutionMath: `3x=${total - 2 * adult}\\Rightarrow x=${student}`,
+    };
+  }
+
+  if (unitId === "functions") {
+    const start = int(4, 9);
+    const km = int(2, 5);
+    const distance = int(6, 15);
+    const answer = start + km * distance;
+    return {
+      id: token, unitId, kind: "word", difficulty: "medium", points: 2,
+      lead: t(locale, `Taksówka pobiera ${start} zł opłaty początkowej i ${km} zł za każdy kilometr. Ile zapłacisz za kurs długości ${distance} km?`, `A taxi charges ${start} initially and ${km} per kilometre. How much is a ${distance} km ride?`),
+      math: `f(x)=${km}x+${start}`,
+      answer,
+      answerSuffix: locale === "pl" ? " zł" : "",
+      hint: t(locale, "Koszt to opłata początkowa plus koszt przejechanych kilometrów.", "Cost equals the initial fee plus the distance charge."),
+      solution: t(locale, "Podstawiamy długość kursu:", "Substitute the ride distance:"),
+      solutionMath: `f(${distance})=${km}\\cdot${distance}+${start}=${answer}`,
+    };
+  }
+
+  if (unitId === "sequences") {
+    const first = int(20, 50);
+    const add = int(5, 15);
+    const week = int(6, 12);
+    const answer = first + (week - 1) * add;
+    return {
+      id: token, unitId, kind: "word", difficulty: "medium", points: 2,
+      lead: t(locale, `W pierwszym tygodniu Kuba odkłada ${first} zł, a w każdym kolejnym o ${add} zł więcej. Ile odłoży w ${week}. tygodniu?`, `Kuba saves ${first} in week one and ${add} more each following week. How much will he save in week ${week}?`),
+      math: `a_n=a_1+(n-1)r`,
+      answer,
+      hint: t(locale, "Kwoty tworzą ciąg arytmetyczny.", "The weekly amounts form an arithmetic sequence."),
+      solution: t(locale, "Korzystamy ze wzoru na wyraz n-ty:", "Use the nth-term formula:"),
+      solutionMath: `a_${week}=${first}+(${week}-1)\\cdot${add}=${answer}`,
+    };
+  }
+
+  if (unitId === "trigonometry") {
+    const h = pick([3, 4, 5]);
+    const d = pick([4, 12, 12]);
+    const answer = Number(Math.sqrt(h * h + d * d).toFixed(2));
+    return {
+      id: token, unitId, kind: "word", difficulty: "medium", points: 2,
+      lead: t(locale, `Drabina opiera się o ścianę. Jej dolny koniec stoi ${d} m od ściany, a górny sięga ${h} m wysokości. Jak długa jest drabina?`, `A ladder leans against a wall. Its base is ${d} m from the wall and reaches ${h} m high. How long is the ladder?`),
+      math: `l=\\sqrt{${d}^2+${h}^2}`,
+      answer,
+      answerSuffix: " m",
+      hint: t(locale, "Drabina jest przeciwprostokątną.", "The ladder is the hypotenuse."),
+      solution: t(locale, "Stosujemy twierdzenie Pitagorasa:", "Apply the Pythagorean theorem:"),
+      solutionMath: `l=\\sqrt{${d}^2+${h}^2}=${answer}`,
+    };
+  }
+
+  if (unitId === "planimetry") {
+    const a = int(8, 15);
+    const h = int(5, 12);
+    const answer = (a * h) / 2;
+    return {
+      id: token, unitId, kind: "word", difficulty: "medium", points: 2,
+      lead: t(locale, `Trójkątny fragment działki ma podstawę ${a} m i wysokość ${h} m. Ile metrów kwadratowych ma ten fragment?`, `A triangular plot has a base of ${a} m and height of ${h} m. What is its area?`),
+      math: "P=\\frac{ah}{2}",
+      answer,
+      answerSuffix: " m²",
+      hint: t(locale, "Użyj wzoru na pole trójkąta.", "Use the triangle area formula."),
+      solution: t(locale, "Pole wynosi:", "The area is:"),
+      solutionMath: `P=\\frac{${a}\\cdot${h}}{2}=${answer}`,
+    };
+  }
+
+  if (unitId === "stereometry") {
+    const a = int(20, 40);
+    const b = int(15, 30);
+    const h = int(20, 35);
+    const answer = Number((a * b * h / 1000).toFixed(2));
+    return {
+      id: token, unitId, kind: "word", difficulty: "medium", points: 2,
+      lead: t(locale, `Akwarium ma wymiary ${a} cm × ${b} cm × ${h} cm. Ile litrów wody mieści do pełna? Przyjmij 1 l = 1000 cm³.`, `An aquarium measures ${a} cm × ${b} cm × ${h} cm. How many litres does it hold? Use 1 L = 1000 cm³.`),
+      math: `V=${a}\\cdot${b}\\cdot${h}`,
+      answer,
+      answerSuffix: " l",
+      hint: t(locale, "Najpierw policz objętość w cm³, potem podziel przez 1000.", "Find the volume in cm³, then divide by 1000."),
+      solution: t(locale, "Po przeliczeniu jednostek:", "After converting units:"),
+      solutionMath: `V=\\frac{${a}\\cdot${b}\\cdot${h}}{1000}=${answer}\\text{ l}`,
+    };
+  }
+
+  if (unitId === "probability") {
+    const red = int(2, 5);
+    const blue = int(3, 6);
+    const all = red + blue;
+    const answer = Number(((red / all) * 100).toFixed(2));
+    return {
+      id: token, unitId, kind: "word", difficulty: "medium", points: 2,
+      lead: t(locale, `W pudełku są ${red} czerwone i ${blue} niebieskie kule. Losujemy jedną kulę. Jakie jest prawdopodobieństwo wylosowania czerwonej? Podaj w procentach.`, `A box contains ${red} red and ${blue} blue balls. One ball is drawn. What is the probability of drawing red? Give a percentage.`),
+      math: `P(A)=\\frac{${red}}{${all}}`,
+      answer,
+      answerSuffix: "%",
+      hint: t(locale, "Wyniki sprzyjające to czerwone kule, wszystkie wyniki to wszystkie kule.", "Favourable outcomes are red balls; total outcomes are all balls."),
+      solution: t(locale, "Prawdopodobieństwo wynosi:", "The probability is:"),
+      solutionMath: `P(A)=\\frac{${red}}{${all}}=${answer}\\%`,
+    };
+  }
+
+  return baseQuestion(unitId, locale, token);
+}
+
+function makeMcq(
+  question: GeneratedQuestion,
+  locale: Locale,
+): GeneratedQuestion {
+  const answer = question.answer;
+  const scale = Math.max(1, Math.abs(answer) * 0.15);
+  const candidates = [
+    answer,
+    Number((answer + scale).toFixed(2)),
+    Number((answer - scale).toFixed(2)),
+    Number((answer * 2).toFixed(2)),
+    Number((answer / 2).toFixed(2)),
+  ];
+  const unique = [...new Set(candidates)].slice(0, 4);
+  while (unique.length < 4) unique.push(answer + unique.length + 1);
+  const shuffled = unique
+    .map((value) => ({ value, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ value }, index) => ({
+      id: String.fromCharCode(65 + index),
+      label: `${value}${question.answerSuffix ?? ""}`,
+      value,
+    }));
+
+  return {
+    ...question,
+    kind: "mcq",
+    points: Math.max(1, question.points),
+    tail:
+      question.tail ??
+      t(locale, "Wybierz jedną poprawną odpowiedź.", "Choose one correct answer."),
+    options: shuffled,
+  };
+}
+
+export function generateQuestion(
+  unitId: string,
+  locale: Locale,
+  seed = Date.now(),
+  mode: QuestionMode = "mixed",
+): GeneratedQuestion {
+  const token = tokenFor(unitId, seed);
+  if (mode === "quick") return baseQuestion(unitId, locale, token);
+  if (mode === "word") return generateWordQuestion(unitId, locale, seed);
+
+  const variant = int(0, 3);
+  if (variant === 0) return baseQuestion(unitId, locale, token);
+  if (variant === 1) return generateWordQuestion(unitId, locale, seed);
+  if (variant === 2) return makeMcq(baseQuestion(unitId, locale, token), locale);
+  return makeMcq(generateWordQuestion(unitId, locale, seed), locale);
+}
+
+export function generateSet(
+  unitIds: string[],
+  count: number,
+  locale: Locale,
+) {
   const source = unitIds.length
     ? unitIds
     : ["real-numbers", "algebra", "equations", "functions"];
-  return Array.from({ length: count }, (_, i) =>
-    generateQuestion(source[i % source.length], locale, Date.now() + i),
-  );
+
+  return Array.from({ length: count }, (_, i) => {
+    const unitId = source[i % source.length];
+    const seed = Date.now() + i;
+    const pattern = i % 4;
+    if (pattern === 0) return generateQuestion(unitId, locale, seed, "quick");
+    if (pattern === 1) return generateQuestion(unitId, locale, seed, "word");
+    if (pattern === 2)
+      return makeMcq(generateQuestion(unitId, locale, seed, "quick"), locale);
+    return makeMcq(generateQuestion(unitId, locale, seed, "word"), locale);
+  });
 }
