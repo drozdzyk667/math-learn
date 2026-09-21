@@ -3,10 +3,10 @@
   --surface:#ffffff;
   --surface-2:#f0f2f5;
   --text:#171820;
-  --muted:#707586;
+  --muted:#555b6b;
   --line:#e1e4ea;
   --accent:#7c5cff;
-  --accent-2:#9e85ff;
+  --accent-2:#5c3fd6;
   --success:#1fa774;
   --danger:#df596d;
   --shadow:0 20px 60px rgba(25,28,40,.08);
@@ -98,7 +98,7 @@ nav{display:flex;flex-direction:column;gap:4px}
   font-size:8px;
   font-style:normal;
   letter-spacing:.7px;
-  background:#e85e82;
+  background:#b72c5a;
   color:white;
 }
 .side-bottom{margin-top:auto}
@@ -252,9 +252,9 @@ nav{display:flex;flex-direction:column;gap:4px}
   border-radius:11px;display:grid;place-items:center;
   color:#fff;font-size:11px;font-weight:900
 }
-.violet{background:#7659f7}.cyan{background:#1aa5b5}.amber{background:#cc8b1e}.rose{background:#d95d78}
-.emerald{background:#17966d}.blue{background:#4187d8}.fuchsia{background:#af59c0}.lime{background:#7aa538}
-.sky{background:#2b9cd0}.orange{background:#dc7743}.pink{background:#d8569c}.teal{background:#2b9d91}.indigo{background:#5f6bd8}
+.violet{background:#6546d5}.cyan{background:#087586}.amber{background:#8a5600}.rose{background:#a83e59}
+.emerald{background:#087a5a}.blue{background:#2864a9}.fuchsia{background:#874099}.lime{background:#52761f}
+.sky{background:#1873a0}.orange{background:#aa5126}.pink{background:#a93977}.teal{background:#147267}.indigo{background:#4857b8}
 .continue-card>p{font-size:13px;line-height:1.58;color:var(--muted)}
 .formula{
   padding:12px 14px;border:1px solid var(--line);border-radius:10px;
@@ -410,7 +410,7 @@ nav{display:flex;flex-direction:column;gap:4px}
 .achievements h3{font-size:15px;margin:0 0 14px}
 .achievements>div{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 .achievement{
-  border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;opacity:.42;filter:grayscale(1)
+  border:1px dashed var(--line);border-radius:12px;padding:14px;display:grid;opacity:1;filter:none;background:var(--surface-2)
 }
 .achievement.unlocked{opacity:1;filter:none;background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
 .achievement i{font-style:normal;font-size:23px}
