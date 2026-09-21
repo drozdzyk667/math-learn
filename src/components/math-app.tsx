@@ -1027,7 +1027,7 @@ function Practice({
   const [unitId, setUnitId] = useState("real-numbers");
   const [mode, setMode] = useState<"mixed" | "word">("mixed");
   const [question, setQuestion] = useState(() =>
-    generateQuestion("real-numbers", lang, Date.now(), "mixed"),
+    generateQuestion("real-numbers", lang, 0, "mixed"),
   );
   const [answer, setAnswer] = useState("");
   const [state, setState] = useState<"idle" | "correct" | "wrong">("idle");
@@ -1038,7 +1038,7 @@ function Practice({
     const next =
       nextMode === "word"
         ? generateWordQuestion(nextUnit, lang)
-        : generateQuestion(nextUnit, lang, Date.now(), "mixed");
+        : generateQuestion(nextUnit, lang, 0, "mixed");
     setQuestion(next);
     setAnswer("");
     setState("idle");
