@@ -3196,3 +3196,410 @@
     transition: none !important;
   }
 }
+
+
+/* =========================================================
+   Follow-up: side XP toast, floating paper dock and richer lab
+   ========================================================= */
+
+/* XP notifications should never cover the lesson title/content. */
+.lesson-xp-toast {
+  left: auto !important;
+  right: 22px !important;
+  top: 92px !important;
+  transform: none !important;
+  max-width: 290px;
+  min-width: 190px;
+  justify-content: flex-start;
+  animation: xp-toast-side-in .3s ease both !important;
+}
+@keyframes xp-toast-side-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px) scale(.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+.lesson-celebration:not(.has-fireworks) {
+  inset: auto !important;
+  top: 0;
+  right: 0;
+  width: 330px;
+  height: 170px;
+}
+.lesson-celebration:not(.has-fireworks) .lesson-xp-toast {
+  position: fixed;
+}
+
+/* Keep paper controls static, while a compact navigation dock follows scrolling. */
+.assessment-floating-dock {
+  position: fixed;
+  top: 94px;
+  right: 18px;
+  z-index: 48;
+  width: 118px;
+  display: grid;
+  gap: 8px;
+}
+.assessment-floating-dock .assessment-floating-timer {
+  position: static !important;
+  inset: auto !important;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 10px;
+}
+.assessment-floating-page {
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  color: var(--text);
+  background: color-mix(in srgb,var(--surface) 94%,transparent);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 35px rgba(15,13,35,.12);
+}
+.assessment-floating-page span {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .8px;
+}
+.assessment-floating-page b {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.assessment-floating-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.assessment-floating-nav button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 0;
+  justify-content: center;
+}
+.assessment-dock-submit {
+  min-height: 42px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+  background: linear-gradient(135deg,#6547ec,#8d70ff);
+  box-shadow: 0 10px 28px rgba(90,64,210,.22);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.assessment-bottom-nav-right {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.assessment-bottom-nav button:disabled,
+.paper-nav-buttons button:disabled,
+.assessment-floating-nav button:disabled {
+  opacity: .38 !important;
+  border: 1px solid var(--line) !important;
+  color: var(--muted) !important;
+  background: var(--surface-2) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+.assessment-bottom-nav .finish {
+  min-width: 150px;
+}
+
+/* The laboratory is now a small family of interactive experiments. */
+.lab-shell {
+  display: grid;
+  gap: 12px;
+}
+.lab-mode-tabs {
+  padding: 7px;
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 7px;
+}
+.lab-mode-tabs button {
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  transition: .18s ease;
+}
+.lab-mode-tabs button:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.lab-mode-tabs button.active {
+  color: var(--text);
+  border-color: color-mix(in srgb,var(--accent) 38%,var(--line));
+  background: color-mix(in srgb,var(--accent) 9%,var(--surface));
+  box-shadow: 0 7px 20px rgba(88,61,190,.1);
+}
+.lab-mode-tabs button.active svg {
+  color: var(--accent-2);
+}
+.lab-grid {
+  grid-template-columns: 390px minmax(0,1fr) !important;
+  align-items: stretch;
+}
+.lab-copy,
+.graph-panel {
+  min-height: 560px !important;
+}
+.lab-copy {
+  display: flex;
+  flex-direction: column;
+}
+.lab-copy > p {
+  min-height: 58px;
+}
+.formula-big {
+  min-height: 72px;
+  display: grid;
+  place-items: center;
+}
+.formula-big .katex {
+  font-size: 1.28em;
+}
+.vertex-slot {
+  min-height: 48px;
+  display: flex;
+  align-items: flex-start;
+}
+.vertex-pill {
+  min-height: 29px;
+  margin-bottom: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.35;
+}
+.parameter-list {
+  margin-top: auto;
+}
+.slider-heading {
+  display: grid !important;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.parameter-description {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.graph-panel {
+  padding: 18px 22px 22px !important;
+  grid-template-rows: auto minmax(0,1fr);
+  align-content: stretch;
+}
+.graph-panel-heading {
+  width: 100%;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.graph-panel-heading > div {
+  display: grid;
+  gap: 2px;
+}
+.graph-panel-heading span {
+  color: var(--accent-2);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+.graph-panel-heading b {
+  font-size: 15px;
+}
+.graph-panel-heading small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.graph-panel svg {
+  width: 100%;
+  height: 430px;
+  max-width: 820px !important;
+  align-self: center;
+}
+.curve {
+  stroke-width: 3.2 !important;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: d .16s ease;
+}
+
+.math-problem > p {
+  line-height: 1.7;
+}
+.problem .math-problem > p:first-child {
+  max-width: 880px;
+}
+
+/* Global progress reset also resets one-time lesson rewards. */
+.reset {
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 9px;
+}
+.reset:hover {
+  background: color-mix(in srgb,var(--danger) 8%,transparent);
+}
+
+@media (max-width: 1500px) {
+  .assessment-floating-dock {
+    top: auto;
+    right: 14px;
+    bottom: 14px;
+    width: auto;
+    min-width: 315px;
+    padding: 7px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    grid-template-columns: auto auto auto auto;
+    align-items: center;
+    gap: 7px;
+    background: color-mix(in srgb,var(--surface) 94%,transparent);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 18px 50px rgba(12,10,28,.2);
+  }
+  .assessment-floating-dock .assessment-floating-timer,
+  .assessment-floating-page {
+    min-height: 40px;
+    box-shadow: none;
+  }
+  .assessment-floating-dock .assessment-floating-timer {
+    width: 94px;
+  }
+  .assessment-floating-page {
+    min-width: 58px;
+  }
+  .assessment-floating-nav {
+    min-width: 92px;
+  }
+  .assessment-dock-submit {
+    min-width: 78px;
+  }
+  .assessment-screen {
+    padding-bottom: 76px;
+  }
+}
+
+@media (max-width: 1050px) {
+  .lab-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .lab-copy,
+  .graph-panel {
+    min-height: 0 !important;
+  }
+  .lab-copy > p {
+    min-height: 0;
+  }
+  .parameter-list {
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .lesson-xp-toast {
+    right: 10px !important;
+    top: 74px !important;
+    max-width: calc(100vw - 20px);
+    min-width: 0;
+  }
+  .lab-mode-tabs {
+    grid-template-columns: repeat(2,1fr);
+  }
+  .graph-panel svg {
+    height: 330px;
+  }
+  .assessment-bottom-nav {
+    gap: 8px;
+  }
+  .assessment-bottom-nav-right {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .assessment-bottom-nav > button,
+  .assessment-bottom-nav-right button {
+    width: 100%;
+    justify-content: center;
+  }
+  .assessment-floating-dock {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    min-width: 0;
+    grid-template-columns: 84px 52px 88px minmax(74px,1fr);
+  }
+  .assessment-floating-dock .assessment-floating-timer {
+    width: 84px;
+  }
+  .assessment-floating-timer svg {
+    display: none;
+  }
+  .assessment-floating-page {
+    min-width: 0;
+  }
+  .assessment-floating-nav {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 460px) {
+  .assessment-floating-dock {
+    grid-template-columns: 72px 46px 78px minmax(68px,1fr);
+    gap: 5px;
+    padding: 5px;
+  }
+  .assessment-floating-dock .assessment-floating-timer {
+    width: 72px;
+    padding: 0 5px;
+  }
+  .assessment-floating-timer b {
+    font-size: 11px;
+  }
+  .assessment-dock-submit {
+    padding: 0 5px;
+  }
+  .assessment-dock-submit svg {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lab-mode-tabs button,
+  .curve {
+    transition: none !important;
+  }
+}
