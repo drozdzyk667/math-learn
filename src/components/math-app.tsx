@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   BadgeCheck,
   BarChart3,
@@ -33,6 +39,7 @@ import {
 } from "@/content/questions";
 import { copy, type Language } from "@/lib/i18n";
 import { FunctionLab } from "./function-lab";
+import { MathFormula } from "./math";
 
 type View =
   | "home"
@@ -61,6 +68,34 @@ const initialProgress: Progress = {
   correct: 9,
 };
 
+const lessonFormulaTex: Record<string, string> = {
+  "powers-roots": "a^m\\cdot a^n=a^{m+n}",
+  percentages: "K_n=K_0(1+p)^n",
+  logs: "\\log_a(xy)=\\log_a x+\\log_a y",
+  identities: "(a+b)^2=a^2+2ab+b^2",
+  "quadratic-equations": "x_{1,2}=\\frac{-b\\pm\\sqrt{\\Delta}}{2a}",
+  "linear-function": "f(x)=ax+b",
+  "quadratic-function": "f(x)=a(x-p)^2+q",
+  "arithmetic-sequence": "a_n=a_1+(n-1)r",
+  "geometric-sequence": "a_n=a_1q^{n-1}",
+  "trig-basics": "\\sin^2\\alpha+\\cos^2\\alpha=1",
+  "circle-equation": "(x-a)^2+(y-b)^2=r^2",
+  combinations: "\\binom nk=\\frac{n!}{k!(n-k)!}",
+  "classical-probability": "P(A)=\\frac{|A|}{|\\Omega|}",
+  derivatives: "f'(x)=\\lim_{h\\to0}\\frac{f(x+h)-f(x)}{h}",
+};
+
+const formulaTex: Record<string, string> = {
+  quadratic: "x_{1,2}=\\frac{-b\\pm\\sqrt{\\Delta}}{2a}",
+  identity: "(a+b)^2=a^2+2ab+b^2",
+  arith: "a_n=a_1+(n-1)r",
+  geom: "a_n=a_1\\cdot q^{n-1}",
+  trig: "\\sin^2\\alpha+\\cos^2\\alpha=1",
+  circle: "(x-a)^2+(y-b)^2=r^2",
+  prob: "P(A)=\\frac{|A|}{|\\Omega|}",
+  compound: "K_n=K_0(1+p)^n",
+};
+
 function readLocal<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
@@ -85,7 +120,6 @@ export function MathApp() {
   const [view, setView] = useState<View>("home");
   const [progress, setProgress] = useState<Progress>(initialProgress);
   const [ready, setReady] = useState(false);
-
   const tr = copy[lang];
 
   useEffect(() => {
@@ -103,6 +137,7 @@ export function MathApp() {
 
   useEffect(() => {
     if (!ready) return;
+    document.documentElement.lang = lang;
     localStorage.setItem("mathly-lang", JSON.stringify(lang));
   }, [ready, lang]);
 
@@ -111,8 +146,13 @@ export function MathApp() {
     localStorage.setItem("mathly-progress", JSON.stringify(progress));
   }, [ready, progress]);
 
-  const totalLessons = curriculum.reduce((sum, unit) => sum + unit.lessons.length, 0);
-  const mastery = Math.round((progress.completedLessons.length / totalLessons) * 100);
+  const totalLessons = curriculum.reduce(
+    (sum, unit) => sum + unit.lessons.length,
+    0,
+  );
+  const mastery = Math.round(
+    (progress.completedLessons.length / totalLessons) * 100,
+  );
 
   const markLesson = (lessonId: string) => {
     setProgress((previous) => {
@@ -126,11 +166,7 @@ export function MathApp() {
     });
   };
 
-  const nav: Array<{
-    id: View;
-    label: string;
-    icon: React.ReactNode;
-  }> = [
+  const nav: Array<{ id: View; label: string; icon: ReactNode }> = [
     { id: "home", label: tr.nav.home, icon: <Sparkles size={18} /> },
     { id: "path", label: tr.nav.path, icon: <Target size={18} /> },
     { id: "knowledge", label: tr.nav.knowledge, icon: <BookOpen size={18} /> },
@@ -171,16 +207,19 @@ export function MathApp() {
           <div className="mastery-mini">
             <span>{tr.mastery}</span>
             <b>{mastery}%</b>
-            <div>
-              <i style={{ width: mastery + "%" }} />
-            </div>
+            <div><i style={{ width: mastery + "%" }} /></div>
           </div>
-
           <div className="settings">
-            <button onClick={() => setLang(lang === "pl" ? "en" : "pl")}>
+            <button
+              aria-label={lang === "pl" ? "Switch to English" : "Przełącz na polski"}
+              onClick={() => setLang(lang === "pl" ? "en" : "pl")}
+            >
               <Languages size={16} /> {lang.toUpperCase()}
             </button>
-            <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+            <button
+              aria-label={theme === "dark" ? "Light mode" : "Dark mode"}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             </button>
           </div>
@@ -211,6 +250,7 @@ export function MathApp() {
               lang={lang}
               completed={progress.completedLessons}
               markLesson={markLesson}
+              setView={setView}
             />
           )}
           {view === "knowledge" && <Knowledge lang={lang} />}
@@ -287,7 +327,7 @@ function Home({
 }) {
   const tr = copy[lang];
   const lessons = curriculum.flatMap((unit) =>
-    unit.lessons.map((lesson) => ({ lesson, unit }))
+    unit.lessons.map((lesson) => ({ lesson, unit })),
   );
   const next =
     lessons.find(({ lesson }) => !progress.completedLessons.includes(lesson.id)) ??
@@ -297,14 +337,17 @@ function Home({
     <>
       <section className="hero panel">
         <div>
-          <span className="eyebrow"><Sparkles size={14} /> PERSONAL LEARNING SPACE</span>
+          <span className="eyebrow">
+            <Sparkles size={14} />
+            {lang === "pl" ? " TWOJA PRZESTRZEŃ NAUKI" : " PERSONAL LEARNING SPACE"}
+          </span>
           <h1>{tr.hello}</h1>
           <p>{tr.subtitle}</p>
           <button className="primary" onClick={() => setView("path")}>
             <Play size={17} fill="currentColor" /> {tr.continue}
           </button>
         </div>
-        <div className="math-art">
+        <div className="math-art" aria-hidden="true">
           <div className="orbit one" />
           <div className="orbit two" />
           <div className="math-core">π<span>√</span><b>∞</b><i>∫</i></div>
@@ -312,30 +355,65 @@ function Home({
       </section>
 
       <section className="stats">
-        <Stat icon={<Trophy />} label={tr.xp} value={String(progress.xp)} sub="+120 this week" />
-        <Stat icon={<Flame />} label={tr.streak} value={String(progress.streak)} sub={lang === "pl" ? "dni z rzędu" : "days in a row"} />
-        <Stat icon={<BarChart3 />} label={tr.mastery} value={mastery + "%"} sub={progress.completedLessons.length + " lessons"} />
-        <Stat icon={<Target />} label={tr.weekly} value="3 / 5" sub={lang === "pl" ? "sesji nauki" : "study sessions"} />
+        <Stat
+          icon={<Trophy />}
+          label={tr.xp}
+          value={String(progress.xp)}
+          sub={lang === "pl" ? "+120 w tym tygodniu" : "+120 this week"}
+        />
+        <Stat
+          icon={<Flame />}
+          label={tr.streak}
+          value={String(progress.streak)}
+          sub={lang === "pl" ? "dni z rzędu" : "days in a row"}
+        />
+        <Stat
+          icon={<BarChart3 />}
+          label={tr.mastery}
+          value={mastery + "%"}
+          sub={
+            progress.completedLessons.length +
+            " " +
+            (lang === "pl" ? "ukończonych lekcji" : "completed lessons")
+          }
+        />
+        <Stat
+          icon={<Target />}
+          label={tr.weekly}
+          value="3 / 5"
+          sub={lang === "pl" ? "sesji nauki" : "study sessions"}
+        />
       </section>
 
       <section className="home-grid">
         <article className="panel continue-card">
           <div className="unit-head">
-            <span className={"unit-badge " + next.unit.accent}>{next.unit.roman}</span>
+            <span className={"unit-badge " + next.unit.accent}>
+              {next.unit.roman}
+            </span>
             <div>
               <small>{tr.recommended}</small>
               <h2>{next.lesson.title[lang]}</h2>
             </div>
-            <span className="time"><Clock3 size={15} /> {next.lesson.minutes} min</span>
+            <span className="time">
+              <Clock3 size={15} /> {next.lesson.minutes} min
+            </span>
           </div>
           <p>{next.lesson.summary[lang]}</p>
-          {next.lesson.formula && <div className="formula">{next.lesson.formula}</div>}
+          {lessonFormulaTex[next.lesson.id] && (
+            <div className="formula">
+              <MathFormula tex={lessonFormulaTex[next.lesson.id]} display />
+            </div>
+          )}
           <div className="actions">
-            <button className="primary small" onClick={() => markLesson(next.lesson.id)}>
+            <button
+              className="primary small"
+              onClick={() => markLesson(next.lesson.id)}
+            >
               <CheckCircle2 size={16} /> {tr.markDone}
             </button>
-            <button className="ghost" onClick={() => setView("knowledge")}>
-              {tr.nav.knowledge} <ChevronRight size={16} />
+            <button className="ghost" onClick={() => setView("path")}>
+              {tr.nav.path} <ChevronRight size={16} />
             </button>
           </div>
         </article>
@@ -360,21 +438,27 @@ function Home({
       </section>
 
       <PageHead
-        eyebrow="EXPLORE"
-        title={lang === "pl" ? "Ucz się różnymi trybami" : "Learn in different modes"}
-        text={lang === "pl"
-          ? "Teoria, praktyka, testy i prawdziwy tryb egzaminacyjny pracują na jednym postępie."
-          : "Theory, practice, tests and exam mode all share one progress system."}
+        eyebrow={lang === "pl" ? "TRYBY NAUKI" : "LEARNING MODES"}
+        title={lang === "pl" ? "Ucz się różnymi sposobami" : "Learn in different ways"}
+        text={
+          lang === "pl"
+            ? "Teoria, praktyka, klasówki i tryb egzaminacyjny korzystają z jednego wspólnego postępu."
+            : "Theory, practice, unit tests and exam mode all share one progress system."
+        }
       />
 
       <section className="mode-grid">
         {[
-          ["knowledge", <BookOpen key="k" />, tr.nav.knowledge, lang === "pl" ? "Krótka teoria, przykłady i pułapki." : "Concise theory, examples and traps."],
-          ["tasks", <Calculator key="k" />, tr.nav.tasks, lang === "pl" ? "Losowane warianty z rozwiązaniami." : "Randomised variants with solutions."],
-          ["tests", <BadgeCheck key="k" />, tr.nav.tests, lang === "pl" ? "Klasówka po każdym dziale." : "A test after every unit."],
-          ["exam", <Clock3 key="k" />, tr.nav.exam, lang === "pl" ? "60 minut z przerobionych działów." : "60 minutes from covered units."],
+          ["knowledge", <BookOpen key="knowledge" />, tr.nav.knowledge, lang === "pl" ? "Krótka teoria, przykłady i typowe pułapki." : "Concise theory, examples and common traps."],
+          ["tasks", <Calculator key="tasks" />, tr.nav.tasks, lang === "pl" ? "Losowane warianty z pełnymi rozwiązaniami." : "Randomised variants with worked solutions."],
+          ["tests", <BadgeCheck key="tests" />, tr.nav.tests, lang === "pl" ? "Arkusz klasówki po każdym dziale." : "A paper-style test after every unit."],
+          ["exam", <Clock3 key="exam" />, tr.nav.exam, lang === "pl" ? "60 minut z przerobionych działów." : "60 minutes based on covered units."],
         ].map(([id, icon, title, desc]) => (
-          <button key={String(id)} className="mode-card panel" onClick={() => setView(id as View)}>
+          <button
+            key={String(id)}
+            className="mode-card panel"
+            onClick={() => setView(id as View)}
+          >
             <span>{icon}</span>
             <h3>{title}</h3>
             <p>{desc}</p>
@@ -392,7 +476,7 @@ function Stat({
   value,
   sub,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
   sub: string;
@@ -409,51 +493,157 @@ function Path({
   lang,
   completed,
   markLesson,
+  setView,
 }: {
   lang: Language;
   completed: string[];
   markLesson: (id: string) => void;
+  setView: (view: View) => void;
 }) {
   const tr = copy[lang];
+  const [selected, setSelected] = useState({
+    unitId: curriculum[0].id,
+    lessonId: curriculum[0].lessons[0].id,
+  });
+
+  const selectedUnit =
+    curriculum.find((unit) => unit.id === selected.unitId) ?? curriculum[0];
+  const selectedLesson =
+    selectedUnit.lessons.find((lesson) => lesson.id === selected.lessonId) ??
+    selectedUnit.lessons[0];
+
+  const previewQuestion = useMemo(
+    () => generateQuestion(selectedUnit.id, lang, 20260921),
+    [selectedUnit.id, lang],
+  );
 
   return (
     <>
-      <PageHead eyebrow="CURRICULUM" title={tr.curriculum} text={tr.curriculumSub} />
-      <div className="path-list">
-        {curriculum.map((unit) => {
-          const done = unit.lessons.filter((lesson) => completed.includes(lesson.id)).length;
-          return (
-            <section className="unit panel" key={unit.id}>
-              <div className="unit-title">
-                <span className={"unit-badge " + unit.accent}>{unit.roman}</span>
-                <div>
-                  <h2>{unit.title[lang]}</h2>
-                  <p>{unit.short[lang]}</p>
+      <PageHead
+        eyebrow={lang === "pl" ? "PROGRAM" : "CURRICULUM"}
+        title={tr.curriculum}
+        text={tr.curriculumSub}
+      />
+
+      <div className="learning-path-shell">
+        <div className="path-list">
+          {curriculum.map((unit, unitIndex) => {
+            const done = unit.lessons.filter((lesson) =>
+              completed.includes(lesson.id),
+            ).length;
+            const unitSelected = selected.unitId === unit.id;
+
+            return (
+              <section
+                className={unitSelected ? "unit panel selected-unit" : "unit panel"}
+                key={unit.id}
+              >
+                <div className="unit-title">
+                  <span className={"unit-badge " + unit.accent}>
+                    {unit.roman}
+                  </span>
+                  <div>
+                    <small>{lang === "pl" ? "MODUŁ" : "UNIT"} {unitIndex + 1}</small>
+                    <h2>{unit.title[lang]}</h2>
+                    <p>{unit.short[lang]}</p>
+                  </div>
+                  <div className="unit-progress">
+                    <b>{done}/{unit.lessons.length}</b>
+                    <span>
+                      <i style={{ width: (done / unit.lessons.length) * 100 + "%" }} />
+                    </span>
+                  </div>
                 </div>
-                <b>{done}/{unit.lessons.length}</b>
-              </div>
-              <div className="lesson-list">
-                {unit.lessons.map((lesson) => {
-                  const isDone = completed.includes(lesson.id);
-                  return (
-                    <button
-                      key={lesson.id}
-                      className={isDone ? "lesson done" : "lesson"}
-                      onClick={() => markLesson(lesson.id)}
-                    >
-                      <span>{isDone ? <CheckCircle2 size={18} /> : <Play size={16} />}</span>
-                      <div>
-                        <b>{lesson.title[lang]}</b>
-                        <small>{lesson.summary[lang]}</small>
-                      </div>
-                      <em>{lesson.level === "basic" ? tr.basic : tr.extended} • {lesson.minutes} min</em>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          );
-        })}
+
+                <div className="lesson-list">
+                  {unit.lessons.map((lesson, lessonIndex) => {
+                    const isDone = completed.includes(lesson.id);
+                    const isSelected =
+                      selected.lessonId === lesson.id &&
+                      selected.unitId === unit.id;
+
+                    return (
+                      <button
+                        key={lesson.id}
+                        className={[
+                          "lesson",
+                          isDone ? "done" : "",
+                          isSelected ? "selected" : "",
+                        ].join(" ")}
+                        onClick={() =>
+                          setSelected({ unitId: unit.id, lessonId: lesson.id })
+                        }
+                      >
+                        <span>
+                          {isDone ? <CheckCircle2 size={18} /> : <b>{lessonIndex + 1}</b>}
+                        </span>
+                        <div>
+                          <b>{lesson.title[lang]}</b>
+                          <small>{lesson.summary[lang]}</small>
+                        </div>
+                        <em>
+                          {lesson.level === "basic" ? tr.basic : tr.extended}
+                          {" • "}
+                          {lesson.minutes} min
+                        </em>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+
+        <aside className="lesson-preview panel">
+          <div className="preview-top">
+            <span className={"unit-badge " + selectedUnit.accent}>
+              {selectedUnit.icon}
+            </span>
+            <div>
+              <small>{lang === "pl" ? "PODGLĄD LEKCJI" : "LESSON PREVIEW"}</small>
+              <h2>{selectedLesson.title[lang]}</h2>
+            </div>
+          </div>
+
+          <p>{selectedLesson.summary[lang]}</p>
+
+          <div className="preview-block">
+            <span>{lang === "pl" ? "Co przećwiczysz" : "What you'll practise"}</span>
+            <ul>
+              <li>{lang === "pl" ? "rozpoznawanie typu zadania i dobór metody" : "identifying the problem type and choosing a method"}</li>
+              <li>{lang === "pl" ? "czytelny zapis kolejnych kroków rozwiązania" : "writing clear step-by-step solutions"}</li>
+              <li>{lang === "pl" ? "unikanie typowych błędów rachunkowych" : "avoiding common calculation mistakes"}</li>
+            </ul>
+          </div>
+
+          {lessonFormulaTex[selectedLesson.id] && (
+            <div className="preview-formula">
+              <span>{lang === "pl" ? "Kluczowy wzór" : "Key formula"}</span>
+              <MathFormula tex={lessonFormulaTex[selectedLesson.id]} display />
+            </div>
+          )}
+
+          <div className="preview-example">
+            <span>{lang === "pl" ? "Przykład z modułu" : "Module example"}</span>
+            <MathProblem question={previewQuestion} compact />
+          </div>
+
+          <div className="preview-actions">
+            <button
+              className="primary"
+              onClick={() => markLesson(selectedLesson.id)}
+              disabled={completed.includes(selectedLesson.id)}
+            >
+              <CheckCircle2 size={16} />
+              {completed.includes(selectedLesson.id) ? tr.done : tr.markDone}
+            </button>
+            <button className="secondary" onClick={() => setView("tasks")}>
+              <Calculator size={16} />
+              {lang === "pl" ? "Ćwicz ten dział" : "Practise this unit"}
+            </button>
+          </div>
+        </aside>
       </div>
     </>
   );
@@ -461,10 +651,13 @@ function Path({
 
 function Knowledge({ lang }: { lang: Language }) {
   const tr = copy[lang];
-
   return (
     <>
-      <PageHead eyebrow="KNOWLEDGE BASE" title={tr.knowledgeTitle} text={tr.knowledgeSub} />
+      <PageHead
+        eyebrow={lang === "pl" ? "BIBLIOTEKA" : "KNOWLEDGE BASE"}
+        title={tr.knowledgeTitle}
+        text={tr.knowledgeSub}
+      />
       <div className="knowledge-grid">
         {curriculum.map((unit) => (
           <article className="panel knowledge-card" key={unit.id}>
@@ -476,7 +669,11 @@ function Knowledge({ lang }: { lang: Language }) {
                 <section key={lesson.id}>
                   <b>{lesson.title[lang]}</b>
                   <small>{lesson.summary[lang]}</small>
-                  {lesson.formula && <code>{lesson.formula}</code>}
+                  {lessonFormulaTex[lesson.id] && (
+                    <div className="knowledge-formula">
+                      <MathFormula tex={lessonFormulaTex[lesson.id]} />
+                    </div>
+                  )}
                 </section>
               ))}
             </div>
@@ -497,9 +694,11 @@ function FormulaCards({ lang }: { lang: Language }) {
       <PageHead
         eyebrow="ACTIVE RECALL"
         title={tr.flashcards}
-        text={lang === "pl"
-          ? "Najpierw spróbuj odtworzyć wzór z pamięci, dopiero potem odwróć kartę."
-          : "Recall the formula first, then flip the card."}
+        text={
+          lang === "pl"
+            ? "Najpierw spróbuj odtworzyć wzór z pamięci. Dopiero potem odwróć kartę."
+            : "Recall the formula from memory first. Then flip the card."
+        }
       />
       <div className="flash-grid">
         {formulas.map((card) => {
@@ -512,7 +711,7 @@ function FormulaCards({ lang }: { lang: Language }) {
                 setFlipped((items) =>
                   items.includes(card.id)
                     ? items.filter((id) => id !== card.id)
-                    : [...items, card.id]
+                    : [...items, card.id],
                 )
               }
             >
@@ -520,7 +719,9 @@ function FormulaCards({ lang }: { lang: Language }) {
               <h3>{card.name[lang]}</h3>
               {isFlipped ? (
                 <>
-                  <strong>{card.formula}</strong>
+                  <div className="flash-formula">
+                    <MathFormula tex={formulaTex[card.id] ?? card.formula} display />
+                  </div>
                   <p>{card.note[lang]}</p>
                 </>
               ) : (
@@ -534,6 +735,22 @@ function FormulaCards({ lang }: { lang: Language }) {
   );
 }
 
+function MathProblem({
+  question,
+  compact = false,
+}: {
+  question: GeneratedQuestion;
+  compact?: boolean;
+}) {
+  return (
+    <div className={compact ? "math-problem compact" : "math-problem"}>
+      <p>{question.lead}</p>
+      <MathFormula tex={question.math} display />
+      {question.tail && <p>{question.tail}</p>}
+    </div>
+  );
+}
+
 function Practice({
   lang,
   onResult,
@@ -543,7 +760,9 @@ function Practice({
 }) {
   const tr = copy[lang];
   const [unitId, setUnitId] = useState("real-numbers");
-  const [question, setQuestion] = useState(() => generateQuestion("real-numbers", lang));
+  const [question, setQuestion] = useState(() =>
+    generateQuestion("real-numbers", lang),
+  );
   const [answer, setAnswer] = useState("");
   const [state, setState] = useState<"idle" | "correct" | "wrong">("idle");
   const [showHint, setShowHint] = useState(false);
@@ -572,15 +791,25 @@ function Practice({
     onResult(ok);
   };
 
+  const difficulty =
+    question.difficulty === "easy"
+      ? lang === "pl" ? "ŁATWE" : "EASY"
+      : question.difficulty === "medium"
+        ? lang === "pl" ? "ŚREDNIE" : "MEDIUM"
+        : lang === "pl" ? "TRUDNE" : "HARD";
+
   return (
     <>
       <PageHead
-        eyebrow="PRACTICE ENGINE"
+        eyebrow={lang === "pl" ? "TRENING" : "PRACTICE ENGINE"}
         title={tr.tasksTitle}
-        text={lang === "pl"
-          ? "Każde losowanie daje inny wariant. Uczysz się schematu rozwiązania, a nie jednej odpowiedzi."
-          : "Every draw gives a new variant, so you learn the method rather than one answer."}
+        text={
+          lang === "pl"
+            ? "Każde losowanie daje inny wariant. Uczysz się metody rozwiązania, a nie jednej odpowiedzi."
+            : "Every draw creates a new variant, so you learn the method rather than memorising an answer."
+        }
       />
+
       <div className="practice-grid">
         <aside className="panel topic-list">
           {curriculum.map((unit) => (
@@ -595,22 +824,23 @@ function Practice({
         </aside>
 
         <section className="panel problem">
-          <div className="problem-meta">
-            <span>{question.difficulty.toUpperCase()}</span>
-            <small>#{question.id.slice(-5)}</small>
-          </div>
-          <h2>{question.prompt}</h2>
+          <div className="problem-meta"><span>{difficulty}</span></div>
+          <MathProblem question={question} />
 
           <div className="answer-box">
             <label>{lang === "pl" ? "Twoja odpowiedź" : "Your answer"}</label>
             <div>
-              <input
-                value={answer}
-                onChange={(event) => setAnswer(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && check()}
-                inputMode="decimal"
-                placeholder="="
-              />
+              <div className="answer-input-wrap">
+                <input
+                  value={answer}
+                  onChange={(event) => setAnswer(event.target.value)}
+                  onKeyDown={(event) => event.key === "Enter" && check()}
+                  inputMode="decimal"
+                  placeholder="="
+                  aria-label={lang === "pl" ? "Twoja odpowiedź" : "Your answer"}
+                />
+                {question.answerSuffix && <span>{question.answerSuffix}</span>}
+              </div>
               <button className="primary" onClick={check}>{tr.check}</button>
             </div>
           </div>
@@ -623,19 +853,45 @@ function Practice({
           )}
 
           <div className="problem-actions">
-            <button className="ghost" onClick={() => setShowHint((v) => !v)}>
-              <Lightbulb size={16} /> {tr.hint}
+            <button
+              className="hint-action"
+              onClick={() => setShowHint((value) => !value)}
+            >
+              <Lightbulb size={17} /> {tr.hint}
             </button>
-            <button className="ghost" onClick={() => setShowSolution((v) => !v)}>
-              <BookOpen size={16} /> {tr.solution}
+            <button
+              className="solution-action"
+              onClick={() => setShowSolution((value) => !value)}
+            >
+              <BookOpen size={17} /> {tr.solution}
             </button>
-            <button className="secondary" onClick={randomise}>
-              <RefreshCcw size={16} /> {tr.newVariant}
+            <button className="randomize-action" onClick={randomise}>
+              <RefreshCcw size={17} /> {tr.newVariant}
             </button>
           </div>
 
-          {showHint && <div className="reveal"><Lightbulb size={17} /> {question.hint}</div>}
-          {showSolution && <div className="reveal solution"><Sigma size={17} /> {question.solution}</div>}
+          <div className="reveal-slot">
+            {showHint && (
+              <div className="reveal hint-reveal">
+                <Lightbulb size={17} />
+                <div>
+                  <span>{question.hint}</span>
+                  {question.hintMath && <MathFormula tex={question.hintMath} display />}
+                </div>
+              </div>
+            )}
+            {showSolution && (
+              <div className="reveal solution">
+                <Sigma size={17} />
+                <div>
+                  <span>{question.solution}</span>
+                  {question.solutionMath && (
+                    <MathFormula tex={question.solutionMath} display />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </>
@@ -650,7 +906,10 @@ function Tests({
   onFinish: (score: number) => void;
 }) {
   const tr = copy[lang];
-  const [active, setActive] = useState<{ unitId: string; questions: GeneratedQuestion[] } | null>(null);
+  const [active, setActive] = useState<{
+    unitId: string;
+    questions: GeneratedQuestion[];
+  } | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<number | null>(null);
 
@@ -668,10 +927,13 @@ function Tests({
   };
 
   if (active) {
+    const unit = curriculum.find((item) => item.id === active.unitId);
     return (
       <Assessment
         lang={lang}
-        title={tr.classTests + ": " + curriculum.find((u) => u.id === active.unitId)?.title[lang]}
+        title={unit?.title[lang] ?? tr.classTests}
+        kind="test"
+        durationLabel="25 min"
         questions={active.questions}
         answers={answers}
         setAnswers={setAnswers}
@@ -684,14 +946,21 @@ function Tests({
 
   return (
     <>
-      <PageHead eyebrow="CHECKPOINTS" title={tr.classTests} text={tr.classTestsSub} />
+      <PageHead
+        eyebrow={lang === "pl" ? "SPRAWDŹ SIĘ" : "CHECKPOINTS"}
+        title={tr.classTests}
+        text={tr.classTestsSub}
+      />
       <div className="test-grid">
         {curriculum.map((unit) => (
           <article className="panel test-card" key={unit.id}>
             <span className={"unit-badge " + unit.accent}>{unit.roman}</span>
             <div>
               <h3>{unit.title[lang]}</h3>
-              <p>{unit.lessons.length} {lang === "pl" ? "lekcje" : "lessons"} • 8 {tr.questions} • ~25 min</p>
+              <p>
+                {unit.lessons.length} {lang === "pl" ? "lekcje" : "lessons"}
+                {" • "}8 {tr.questions}{" • "}~25 min
+              </p>
             </div>
             <button className="primary small" onClick={() => start(unit.id)}>
               {tr.testStart} <ChevronRight size={16} />
@@ -716,9 +985,11 @@ function Exam({
   const availableUnits = useMemo(
     () =>
       curriculum
-        .filter((unit) => unit.lessons.some((lesson) => completedLessons.includes(lesson.id)))
+        .filter((unit) =>
+          unit.lessons.some((lesson) => completedLessons.includes(lesson.id)),
+        )
         .map((unit) => unit.id),
-    [completedLessons]
+    [completedLessons],
   );
 
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
@@ -727,31 +998,38 @@ function Exam({
   const [remaining, setRemaining] = useState(3600);
   const [started, setStarted] = useState(false);
 
-  useEffect(() => {
-    if (!started || result !== null) return;
-    const id = window.setInterval(() => setRemaining((value) => Math.max(0, value - 1)), 1000);
-    return () => window.clearInterval(id);
-  }, [started, result]);
-
   const units = availableUnits.length
     ? availableUnits
     : ["real-numbers", "algebra", "equations", "functions"];
 
-  const finish = () => {
+  const finish = useCallback(() => {
     const score = scoreQuestions(questions, answers);
     setResult(score);
     onFinish(score, questions.length);
-  };
+  }, [answers, onFinish, questions]);
 
   useEffect(() => {
-    if (started && remaining === 0 && result === null) finish();
-  }, [started, remaining, result]);
+    if (!started || result !== null) return;
+    const id = window.setInterval(
+      () => setRemaining((value) => Math.max(0, value - 1)),
+      1000,
+    );
+    return () => window.clearInterval(id);
+  }, [started, result]);
+
+  useEffect(() => {
+    if (started && remaining === 0 && result === null && questions.length) {
+      finish();
+    }
+  }, [started, remaining, result, questions.length, finish]);
 
   if (started) {
     return (
       <Assessment
         lang={lang}
-        title={tr.examTitle}
+        title={lang === "pl" ? "Próbna matura z matematyki" : "Mathematics mock exam"}
+        kind="exam"
+        durationLabel="60 min"
         questions={questions}
         answers={answers}
         setAnswers={setAnswers}
@@ -765,7 +1043,11 @@ function Exam({
 
   return (
     <>
-      <PageHead eyebrow="EXAM MODE" title={tr.examTitle} text={tr.examSub} />
+      <PageHead
+        eyebrow={lang === "pl" ? "TRYB EGZAMINACYJNY" : "EXAM MODE"}
+        title={tr.examTitle}
+        text={tr.examSub}
+      />
       <section className="panel exam-card">
         <div className="clock">
           <Clock3 size={42} />
@@ -776,12 +1058,14 @@ function Exam({
           <h2>{lang === "pl" ? "Twój spersonalizowany arkusz" : "Your personalised paper"}</h2>
           <p>
             {lang === "pl"
-              ? "12 losowych zadań wyłącznie z działów, które już rozpocząłeś. Każda próba daje nowy zestaw."
-              : "12 random problems only from units you have started. Every attempt produces a new set."}
+              ? "12 losowych zadań wyłącznie z działów, które już rozpocząłeś. Każda próba tworzy nowy arkusz."
+              : "12 random problems only from units you have started. Every attempt creates a new paper."}
           </p>
           <div className="tags">
             {units.map((id) => (
-              <span key={id}>{curriculum.find((unit) => unit.id === id)?.title[lang]}</span>
+              <span key={id}>
+                {curriculum.find((unit) => unit.id === id)?.title[lang]}
+              </span>
             ))}
           </div>
           <button
@@ -802,16 +1086,29 @@ function Exam({
   );
 }
 
-function scoreQuestions(questions: GeneratedQuestion[], answers: Record<string, string>) {
+function scoreQuestions(
+  questions: GeneratedQuestion[],
+  answers: Record<string, string>,
+) {
   return questions.filter((question) => {
     const answer = Number((answers[question.id] ?? "").replace(",", "."));
     return Number.isFinite(answer) && Math.abs(answer - question.answer) < 0.011;
   }).length;
 }
 
+function chunkQuestions(questions: GeneratedQuestion[], perPage = 4) {
+  const pages: GeneratedQuestion[][] = [];
+  for (let i = 0; i < questions.length; i += perPage) {
+    pages.push(questions.slice(i, i + perPage));
+  }
+  return pages;
+}
+
 function Assessment({
   lang,
   title,
+  kind,
+  durationLabel,
   questions,
   answers,
   setAnswers,
@@ -822,6 +1119,8 @@ function Assessment({
 }: {
   lang: Language;
   title: string;
+  kind: "test" | "exam";
+  durationLabel: string;
   questions: GeneratedQuestion[];
   answers: Record<string, string>;
   setAnswers: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -831,17 +1130,29 @@ function Assessment({
   timer?: number;
 }) {
   const tr = copy[lang];
+  const pages = chunkQuestions(questions);
 
   return (
-    <>
-      <div className="assessment-head">
-        <button className="ghost" onClick={back}>← {lang === "pl" ? "wróć" : "back"}</button>
-        <div><span className="eyebrow">ASSESSMENT</span><h1>{title}</h1></div>
-        {timer !== undefined && (
+    <div className="assessment-screen">
+      <div className="assessment-toolbar">
+        <button className="ghost" onClick={back}>
+          ← {lang === "pl" ? "Wróć" : "Back"}
+        </button>
+        <div>
+          <span>
+            {kind === "exam"
+              ? lang === "pl" ? "PRÓBNY EGZAMIN" : "MOCK EXAM"
+              : lang === "pl" ? "KLASÓWKA" : "UNIT TEST"}
+          </span>
+          <b>{title}</b>
+        </div>
+        {timer !== undefined ? (
           <b className="timer">
             {String(Math.floor(timer / 60)).padStart(2, "0")}:
             {String(timer % 60).padStart(2, "0")}
           </b>
+        ) : (
+          <b className="timer">{durationLabel}</b>
         )}
       </div>
 
@@ -853,51 +1164,132 @@ function Assessment({
           <p>
             {result / questions.length >= 0.75
               ? lang === "pl" ? "Bardzo solidny wynik." : "Strong result."
-              : lang === "pl" ? "Wróć do błędnych typów zadań i spróbuj ponownie." : "Review missed problem types and try again."}
+              : lang === "pl"
+                ? "Wróć do błędnych typów zadań i spróbuj ponownie."
+                : "Review missed problem types and try again."}
           </p>
         </div>
       )}
 
-      <div className="assessment-list">
-        {questions.map((question, index) => {
-          const numeric = Number((answers[question.id] ?? "").replace(",", "."));
-          const ok = Number.isFinite(numeric) && Math.abs(numeric - question.answer) < 0.011;
+      <div className="paper-stack">
+        {pages.map((page, pageIndex) => {
+          const firstQuestionIndex = pageIndex * 4;
           return (
-            <article className="panel assessment-question" key={question.id}>
-              <span>{index + 1}</span>
-              <div>
-                <h3>{question.prompt}</h3>
-                <div className="assessment-answer">
-                  <input
-                    disabled={result !== null}
-                    value={answers[question.id] ?? ""}
-                    onChange={(event) =>
-                      setAnswers((current) => ({
-                        ...current,
-                        [question.id]: event.target.value,
-                      }))
-                    }
-                    placeholder="="
-                  />
-                  {result !== null && (
-                    <b className={ok ? "ok" : "wrong"}>
-                      {ok ? "✓" : "→ " + question.answer}
-                    </b>
-                  )}
+            <section className="paper-page" key={pageIndex}>
+              <header className="paper-header">
+                <div className="paper-brand">
+                  <span>Σ</span>
+                  <div><b>MATHLY</b><small>ARKUSZ MATEMATYCZNY</small></div>
                 </div>
-                {result !== null && <small>{question.solution}</small>}
+                <div className="paper-meta">
+                  <span>
+                    {kind === "exam"
+                      ? lang === "pl" ? "PRÓBNA MATURA" : "MOCK EXAM"
+                      : lang === "pl" ? "KLASÓWKA" : "UNIT TEST"}
+                  </span>
+                  <b>{title}</b>
+                  <small>{durationLabel} • {questions.length} {tr.questions}</small>
+                </div>
+              </header>
+
+              {pageIndex === 0 && (
+                <>
+                  <div className="paper-student">
+                    <label>{lang === "pl" ? "Imię i nazwisko" : "Name"}<span /></label>
+                    <label>{lang === "pl" ? "Data" : "Date"}<span /></label>
+                  </div>
+                  <div className="paper-instructions">
+                    <b>{lang === "pl" ? "Instrukcja" : "Instructions"}</b>
+                    <span>
+                      {lang === "pl"
+                        ? "Zapisuj tok rozumowania w wyznaczonym miejscu. Wpisz wynik w polu odpowiedzi."
+                        : "Show your reasoning in the working area and enter the final result in the answer field."}
+                    </span>
+                  </div>
+                </>
+              )}
+
+              <div className="paper-questions">
+                {page.map((question, localIndex) => {
+                  const questionIndex = firstQuestionIndex + localIndex;
+                  const numeric = Number(
+                    (answers[question.id] ?? "").replace(",", "."),
+                  );
+                  const ok =
+                    Number.isFinite(numeric) &&
+                    Math.abs(numeric - question.answer) < 0.011;
+
+                  return (
+                    <article className="paper-question" key={question.id}>
+                      <div className="paper-question-number">{questionIndex + 1}</div>
+                      <div className="paper-question-body">
+                        <MathProblem question={question} />
+                        <div className="paper-answer-row">
+                          <label>
+                            {lang === "pl" ? "Odpowiedź:" : "Answer:"}
+                          </label>
+                          <div className="paper-input-wrap">
+                            <input
+                              disabled={result !== null}
+                              value={answers[question.id] ?? ""}
+                              onChange={(event) =>
+                                setAnswers((current) => ({
+                                  ...current,
+                                  [question.id]: event.target.value,
+                                }))
+                              }
+                              inputMode="decimal"
+                              aria-label={
+                                (lang === "pl" ? "Odpowiedź do zadania " : "Answer for question ") +
+                                (questionIndex + 1)
+                              }
+                            />
+                            {question.answerSuffix && <span>{question.answerSuffix}</span>}
+                          </div>
+                          {result !== null && (
+                            <b className={ok ? "paper-ok" : "paper-wrong"}>
+                              {ok
+                                ? "✓"
+                                : (lang === "pl" ? "Poprawna: " : "Correct: ") +
+                                  question.answer +
+                                  (question.answerSuffix ?? "")}
+                            </b>
+                          )}
+                        </div>
+                        <div className="working-space" aria-label={lang === "pl" ? "Miejsce na rozwiązanie" : "Working area"} />
+                        {result !== null && (
+                          <div className="paper-solution">
+                            <span>{question.solution}</span>
+                            {question.solutionMath && (
+                              <MathFormula tex={question.solutionMath} />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
-            </article>
+
+              <footer className="paper-footer">
+                <span>Mathly</span>
+                <span>
+                  {lang === "pl" ? "strona" : "page"} {pageIndex + 1}/{pages.length}
+                </span>
+              </footer>
+            </section>
           );
         })}
       </div>
 
       {result === null && (
-        <button className="primary finish" onClick={onFinish}>
-          {tr.finish} <CheckCircle2 size={18} />
-        </button>
+        <div className="assessment-submit">
+          <button className="primary finish" onClick={onFinish}>
+            {tr.finish} <CheckCircle2 size={18} />
+          </button>
+        </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -921,11 +1313,13 @@ function Profile({
   return (
     <>
       <PageHead
-        eyebrow="PROFILE"
+        eyebrow={lang === "pl" ? "PROFIL" : "PROFILE"}
         title={tr.profileTitle}
-        text={lang === "pl"
-          ? "XP i seria pomagają utrzymać rytm, ale główną metryką pozostaje opanowanie materiału."
-          : "XP and streaks support consistency, while mastery remains the main metric."}
+        text={
+          lang === "pl"
+            ? "XP i seria pomagają utrzymać rytm, ale najważniejsza pozostaje znajomość materiału."
+            : "XP and streaks support consistency, while mastery remains the main metric."
+        }
       />
 
       <section className="panel profile-card">
@@ -933,14 +1327,16 @@ function Profile({
         <div>
           <h2>Math Explorer</h2>
           <p>{progress.xp} XP • Level {level}</p>
-          <div className="xp-bar"><i style={{ width: ((progress.xp % 250) / 2.5) + "%" }} /></div>
+          <div className="xp-bar">
+            <i style={{ width: (progress.xp % 250) / 2.5 + "%" }} />
+          </div>
         </div>
         <span className="rank"><Trophy size={17} /> ALGEBRAIST</span>
       </section>
 
       <section className="stats">
         <Stat icon={<Flame />} label={tr.streak} value={String(progress.streak)} sub={lang === "pl" ? "dni z rzędu" : "consecutive days"} />
-        <Stat icon={<BarChart3 />} label={tr.mastery} value={mastery + "%"} sub={progress.completedLessons.length + " lessons"} />
+        <Stat icon={<BarChart3 />} label={tr.mastery} value={mastery + "%"} sub={progress.completedLessons.length + " " + (lang === "pl" ? "lekcji" : "lessons")} />
         <Stat icon={<Target />} label={lang === "pl" ? "Skuteczność" : "Accuracy"} value={accuracy + "%"} sub={progress.correct + "/" + progress.answered} />
         <Stat icon={<Zap />} label={tr.xp} value={String(progress.xp)} sub={"Level " + level} />
       </section>
@@ -954,7 +1350,10 @@ function Profile({
             ["🎯", "ACCURATE", lang === "pl" ? "75%+ poprawnych odpowiedzi" : "75%+ correct answers"],
             ["🏁", "EXAM READY", lang === "pl" ? "Ukończ próbny egzamin" : "Complete a mock exam"],
           ].map((item, index) => (
-            <article className={index < 3 ? "achievement unlocked" : "achievement"} key={String(item[1])}>
+            <article
+              className={index < 3 ? "achievement unlocked" : "achievement"}
+              key={String(item[1])}
+            >
               <i>{item[0]}</i>
               <b>{item[1]}</b>
               <small>{item[2]}</small>
