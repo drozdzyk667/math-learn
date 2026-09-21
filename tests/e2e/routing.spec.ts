@@ -95,3 +95,46 @@ test("Polish flashcards and profile stay fully localized", async ({ page }) => {
   await expect(page.getByText("GOTOWY NA MATURĘ")).toBeVisible();
   await expect(page.getByText("FIRST STEPS")).toHaveCount(0);
 });
+
+
+test("active assessment uses guarded red quit action and logical 100% zoom", async ({ page }) => {
+  await page.goto("/pl/tests");
+  await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
+  await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
+
+  await expect(page.getByRole("button", { name: "Przerwij", exact: true })).toBeVisible();
+  await expect(page.getByText("100%", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Przerwij", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByText(/Na pewno chcesz przerwać/i)).toBeVisible();
+
+  await page.getByRole("button", { name: /Zostań i dokończ/i }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Przerwij", exact: true }).click();
+  await page.getByRole("button", { name: /Tak, przerwij/i }).click();
+  await expect(page.getByText(/Zanim zaczniesz/i)).toBeVisible();
+});
+
+test("lesson exercise exposes separate yellow hint and red answer reveals", async ({ page }) => {
+  await page.goto("/pl/path");
+  await page
+    .getByRole("button", { name: /Rozpocznij lekcję krok po kroku/i })
+    .click();
+
+  await page.getByRole("button", { name: "Ćwiczenie", exact: true }).click();
+
+  const hintButton = page.getByRole("button", { name: /Pokaż podpowiedź/i });
+  const answerButton = page.getByRole("button", { name: /Pokaż odpowiedź/i });
+
+  await expect(hintButton).toBeVisible();
+  await expect(answerButton).toBeVisible();
+
+  await hintButton.click();
+  await expect(page.locator(".lesson-reveal-hint")).toBeVisible();
+
+  await answerButton.click();
+  await expect(page.locator(".lesson-reveal-answer")).toBeVisible();
+  await expect(page.getByText(/Poprawna odpowiedź:/i)).toBeVisible();
+});
