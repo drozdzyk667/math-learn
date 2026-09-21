@@ -1281,7 +1281,7 @@ function Assessment({
 }) {
   const tr = copy[lang];
   const pages = chunkQuestions(questions);
-  const [paperZoom, setPaperZoom] = useState(115);
+  const [paperZoom, setPaperZoom] = useState(125);
   const paperStyle = {
     "--paper-scale": paperZoom / 100,
   } as CSSProperties;
