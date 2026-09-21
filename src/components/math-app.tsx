@@ -41,7 +41,6 @@ import {
   generateQuestion,
   generateReasoningQuestion,
   generateSet,
-  generateWordQuestion,
   type GeneratedQuestion,
 } from "@/content/questions";
 import { copy, type Language } from "@/lib/i18n";
@@ -869,17 +868,19 @@ function Practice({
   const [question, setQuestion] = useState(() =>
     generateQuestion("real-numbers", lang, 0, "mixed"),
   );
+  const [questionSeed, setQuestionSeed] = useState(0);
   const [answer, setAnswer] = useState("");
   const [state, setState] = useState<"idle" | "correct" | "wrong">("idle");
   const [showHint, setShowHint] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
 
   const resetQuestion = (nextUnit = unitId, nextMode = mode) => {
-    const seed = Date.now();
+    const nextSeed = questionSeed + 1;
+    setQuestionSeed(nextSeed);
     const next =
       nextMode === "word"
-        ? generateReasoningQuestion(nextUnit, lang, seed)
-        : generateQuestion(nextUnit, lang, seed, "mixed");
+        ? generateReasoningQuestion(nextUnit, lang, nextSeed)
+        : generateQuestion(nextUnit, lang, nextSeed, "mixed");
     setQuestion(next);
     setAnswer("");
     setState("idle");
