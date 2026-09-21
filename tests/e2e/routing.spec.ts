@@ -71,8 +71,9 @@ test("submitted unit test shows a detailed error review", async ({ page }) => {
   await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
   await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
 
-  await page.getByRole("button", { name: /Następna strona/i }).click();
-  await page.getByRole("button", { name: /Następna strona/i }).click();
+  const bottomNav = page.locator(".assessment-bottom-nav");
+  await bottomNav.getByRole("button", { name: /Następna strona/i }).click();
+  await bottomNav.getByRole("button", { name: /Następna strona/i }).click();
   await page.getByRole("button", { name: /Oddaj arkusz/i }).click();
 
   await expect(page.getByText("PODSUMOWANIE ARKUSZA")).toBeVisible();
@@ -137,4 +138,58 @@ test("lesson exercise exposes separate yellow hint and red answer reveals", asyn
   await answerButton.click();
   await expect(page.locator(".lesson-reveal-answer")).toBeVisible();
   await expect(page.getByText(/Poprawna odpowiedź:/i)).toBeVisible();
+});
+
+
+test("assessment floating dock mirrors page navigation and disables boundaries", async ({ page }) => {
+  await page.goto("/pl/tests");
+  await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
+  await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
+
+  const dock = page.locator(".assessment-floating-dock");
+  const previous = dock.getByRole("button", { name: /Poprzednia strona/i });
+  const next = dock.getByRole("button", { name: /Następna strona/i });
+
+  await expect(previous).toBeDisabled();
+  await expect(next).toBeEnabled();
+
+  await next.click();
+  await expect(previous).toBeEnabled();
+
+  await next.click();
+  await expect(next).toBeDisabled();
+  await expect(dock.getByRole("button", { name: /Oddaj/i })).toBeVisible();
+});
+
+test("function laboratory exposes multiple stable graph experiments", async ({ page }) => {
+  await page.goto("/pl/lab");
+
+  await expect(page.getByRole("button", { name: /Parabola/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Prosta/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Sinus/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Moduł/i })).toBeVisible();
+
+  const graphPanel = page.locator(".graph-panel");
+  const initialHeight = await graphPanel.evaluate((element) => element.getBoundingClientRect().height);
+
+  await page.getByRole("button", { name: /Sinus/i }).click();
+  await expect(page.getByText(/Amplituda/i).first()).toBeVisible();
+
+  const sineHeight = await graphPanel.evaluate((element) => element.getBoundingClientRect().height);
+  expect(Math.abs(sineHeight - initialHeight)).toBeLessThan(3);
+
+  await page.getByRole("button", { name: /Moduł/i }).click();
+  await expect(page.getByText(/Wierzchołek/i).first()).toBeVisible();
+});
+
+test("moving through lesson steps shows XP toast without fireworks", async ({ page }) => {
+  await page.goto("/pl/path");
+  await page
+    .getByRole("button", { name: /Rozpocznij lekcję krok po kroku/i })
+    .click();
+
+  await page.getByRole("button", { name: /^Dalej$/i }).click();
+
+  await expect(page.locator(".lesson-xp-toast")).toBeVisible();
+  await expect(page.locator(".lesson-confetti")).toHaveCount(0);
 });
