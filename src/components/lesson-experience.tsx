@@ -22,7 +22,6 @@ import { curriculum } from "@/content/curriculum";
 import {
   generateQuestion,
   generateReasoningQuestion,
-  generateWordQuestion,
   type GeneratedQuestion,
 } from "@/content/questions";
 import {
