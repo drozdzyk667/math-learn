@@ -124,6 +124,70 @@ function baseQuestion(
     };
   }
 
+  if (unitId === "algebra") {
+    const width = pick([5, 6, 7]);
+    const length = width + pick([3, 4]);
+    const border = 1;
+    const innerArea = width * length;
+    const outerArea = (width + 2 * border) * (length + 2 * border);
+    const answer = outerArea - innerArea;
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Szkolna pracownia przygotowuje prostokątną makietę o wymiarach ${width} m × ${length} m. Wokół niej ma powstać pas dekoracyjny o szerokości ${border} m z każdej strony. Materiał zamawia się tylko na sam pas, nie na środek makiety. Ile metrów kwadratowych materiału trzeba zamówić? Zapisz pole większego prostokąta i odejmij pole części wewnętrznej.`,
+        `A school workshop is building a rectangular display measuring ${width} m by ${length} m. A decorative border ${border} m wide is added around all sides. Material is needed only for the border, not the centre. How many square metres are required? Model the larger rectangle and subtract the inner area.`,
+      ),
+      math: `P=(${width}+2)(${length}+2)-${width}\\cdot${length}`,
+      answer,
+      answerSuffix: " m²",
+      hint: t(
+        locale,
+        "Każdy wymiar zewnętrzny zwiększa się o szerokość pasa z dwóch stron.",
+        "Each outside dimension grows by the border width on both sides.",
+      ),
+      solution: t(
+        locale,
+        "Najpierw liczymy pole całego prostokąta z obramowaniem, potem odejmujemy środek.",
+        "Find the total area including the border, then subtract the centre.",
+      ),
+      solutionMath: `P=${width + 2}\\cdot${length + 2}-${innerArea}=${answer}`,
+    };
+  }
+
+  if (unitId === "equations") {
+    const device = pick([480, 600, 720]);
+    const monthly = pick([35, 40, 45]);
+    const months = pick([8, 10, 12]);
+    const total = device + monthly * months;
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Telefon kosztuje jednorazowo ${device} zł, a abonament ${monthly} zł miesięcznie. Po pewnym czasie łączny koszt telefonu i abonamentu wyniósł dokładnie ${total} zł. Ile pełnych miesięcy trwała wtedy umowa? Ułóż równanie opisujące całkowity koszt i wyznacz niewiadomą.`,
+        `A phone costs ${device} up front and the plan costs ${monthly} per month. At some point the combined cost reached exactly ${total}. How many full months had passed? Build an equation for the total cost and solve it.`,
+      ),
+      math: `${device}+${monthly}x=${total}`,
+      answer: months,
+      answerSuffix: locale === "pl" ? " mies." : " months",
+      hint: t(
+        locale,
+        "Najpierw odejmij koszt telefonu, aby został sam koszt abonamentu.",
+        "Subtract the phone cost first so only the monthly-plan cost remains.",
+      ),
+      solution: t(locale, "Rozwiązujemy równanie liniowe:", "Solve the linear equation:"),
+      solutionMath: `${monthly}x=${total - device}\\Rightarrow x=${months}`,
+    };
+  }
+
   if (unitId === "functions") {
     const a = pick([-3, -2, 2, 3, 4]);
     const b = int(-6, 6);
@@ -172,6 +236,38 @@ function baseQuestion(
     };
   }
 
+  if (unitId === "trigonometry") {
+    const distance = pick([12, 18, 24]);
+    const eye = 1.7;
+    const answer = Number((distance + eye).toFixed(1));
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Uczeń stoi ${distance} m od budynku i obserwuje jego dach pod kątem 45° względem poziomu. Jego oczy znajdują się na wysokości ${eye} m nad ziemią. Przyjmując płaski teren, oblicz wysokość budynku. Pamiętaj, że z tangensa otrzymasz wysokość ponad poziomem oczu, a nie pełną wysokość budynku.`,
+        `A student stands ${distance} m from a building and sees the roof at a 45° angle of elevation. Their eyes are ${eye} m above the ground. Assuming level ground, find the building height. The tangent gives the height above eye level, not the full height.`,
+      ),
+      math: `\\tan45^\\circ=\\frac{h-${eye}}{${distance}}`,
+      answer,
+      answerSuffix: " m",
+      hint: t(
+        locale,
+        "Dla 45° tangens wynosi 1, więc różnica wysokości jest równa odległości od budynku.",
+        "For 45°, tangent equals 1, so the height difference equals the horizontal distance.",
+      ),
+      solution: t(
+        locale,
+        "Najpierw wyznaczamy wysokość ponad poziomem oczu, a potem dodajemy wysokość obserwatora.",
+        "Find the height above eye level first, then add the observer's eye height.",
+      ),
+      solutionMath: `h-${eye}=${distance}\\Rightarrow h=${answer}`,
+    };
+  }
+
   if (unitId === "planimetry") {
     const base = int(4, 14);
     const h = int(3, 10);
@@ -201,6 +297,37 @@ function baseQuestion(
       hintMath: "d=\\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}",
       solution: t(locale, "Różnice współrzędnych dają:", "The coordinate differences give:"),
       solutionMath: `d=\\sqrt{${dx}^2+${dy}^2}=${answer}`,
+    };
+  }
+
+  if (unitId === "analytic-geometry") {
+    const x1 = 2;
+    const y1 = 2;
+    const x2 = 8;
+    const y2 = 10;
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    const answer = Number(Math.sqrt(mx * mx + my * my).toFixed(2));
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Na mapie dwa punkty dostaw mają współrzędne A=(${x1},${y1}) i B=(${x2},${y2}). Punkt przeładunkowy ma powstać dokładnie w połowie odcinka AB. Po wyznaczeniu jego współrzędnych oblicz odległość tego punktu od początku układu O=(0,0). Podaj wynik z dokładnością do dwóch miejsc po przecinku.`,
+        `On a map, delivery points are A=(${x1},${y1}) and B=(${x2},${y2}). A hub is placed exactly at the midpoint of AB. Find its coordinates and then its distance from the origin O=(0,0). Give the result to two decimal places.`,
+      ),
+      math: `S=\\left(\\frac{x_A+x_B}{2},\\frac{y_A+y_B}{2}\\right),\\qquad d=\\sqrt{x_S^2+y_S^2}`,
+      answer,
+      hint: t(
+        locale,
+        "To zadanie ma dwa etapy: najpierw środek odcinka, dopiero potem wzór na odległość.",
+        "This is a two-stage problem: find the midpoint first, then use the distance formula.",
+      ),
+      solution: t(locale, "Środek i jego odległość od początku układu:", "The midpoint and its distance from the origin:"),
+      solutionMath: `S=(${mx},${my}),\\qquad d=\\sqrt{${mx}^2+${my}^2}=${answer}`,
     };
   }
 
@@ -648,6 +775,64 @@ export function generateReasoningQuestion(
     };
   }
 
+  if (unitId === "combinatorics") {
+    const answer = 4 * 4 * 3 * 2;
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        "Kod do szafki ma dokładnie 4 cyfry. Można używać tylko cyfr 0, 1, 2, 3 i 4, żadna cyfra nie może się powtórzyć, a kod nie może zaczynać się od zera. Ile różnych kodów spełnia te warunki? Nie wypisuj ich po kolei — zastosuj regułę mnożenia.",
+        "A locker code has exactly 4 digits. Only 0, 1, 2, 3 and 4 may be used, no digit may repeat, and the code cannot start with zero. How many valid codes are possible? Use the multiplication principle rather than listing them.",
+      ),
+      math: "4\\cdot4\\cdot3\\cdot2",
+      answer,
+      hint: t(
+        locale,
+        "Na pierwszej pozycji masz 4 możliwości, bo zero odpada. Potem zostają kolejno 4, 3 i 2 cyfry.",
+        "There are 4 choices for the first position because zero is forbidden, then 4, 3 and 2 choices remain.",
+      ),
+      solution: t(locale, "Mnożymy liczbę możliwości na kolejnych pozycjach:", "Multiply the available choices for each position:"),
+      solutionMath: `N=4\\cdot4\\cdot3\\cdot2=${answer}`,
+    };
+  }
+
+  if (unitId === "calculus") {
+    const perimeter = 40;
+    const half = perimeter / 2;
+    const side = half / 2;
+    const answer = side * side;
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 5,
+      lead: t(
+        locale,
+        `Masz ${perimeter} m siatki i chcesz ogrodzić prostokątny wybieg. Cała siatka ma zostać wykorzystana. Jakie największe pole może mieć wybieg? Zbuduj funkcję pola jednej zmiennej, wykorzystując warunek obwodu, a następnie znajdź jej maksimum.`,
+        `You have ${perimeter} m of fencing for a rectangular enclosure and must use all of it. What is the largest possible area? Build a one-variable area function from the perimeter constraint and find its maximum.`,
+      ),
+      math: `2x+2y=${perimeter},\\qquad P(x)=x(${half}-x)`,
+      answer,
+      answerSuffix: " m²",
+      hint: t(
+        locale,
+        "Z warunku obwodu otrzymujesz y=20−x. Funkcja pola jest parabolą skierowaną w dół.",
+        "From the perimeter constraint, y=20−x. The area function is a downward-opening parabola.",
+      ),
+      solution: t(
+        locale,
+        "Maksimum pola jest w wierzchołku paraboli; prostokąt okazuje się kwadratem.",
+        "The maximum area occurs at the parabola vertex; the rectangle is a square.",
+      ),
+      solutionMath: `P(x)=-x^2+${half}x,\\qquad x=${side},\\qquad P_{max}=${answer}`,
+    };
+  }
+
   return generateWordQuestion(unitId, locale, seed);
 }
 
@@ -695,7 +880,7 @@ export function generateQuestion(
   seedRng(unitId, seed);
   const token = tokenFor(unitId, seed);
   if (mode === "quick") return baseQuestion(unitId, locale, token);
-  if (mode === "word") return generateWordQuestion(unitId, locale, seed);
+  if (mode === "word") return generateReasoningQuestion(unitId, locale, seed);
 
   const variant = int(0, 4);
   if (variant === 0) return baseQuestion(unitId, locale, token);
