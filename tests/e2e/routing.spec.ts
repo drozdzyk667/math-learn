@@ -9,13 +9,19 @@ test("root redirects to the Polish routed dashboard", async ({ page }) => {
 test("primary modules use real URLs and preserve locale", async ({ page }) => {
   await page.goto("/pl");
 
-  await page.getByRole("button", { name: "Ścieżka" }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Ścieżka", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/pl\/path$/);
 
   await page.getByRole("button", { name: /Switch to English/i }).click();
   await expect(page).toHaveURL(/\/en\/path$/);
 
-  await page.getByRole("button", { name: "Knowledge base" }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Knowledge base", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/en\/knowledge$/);
 });
 
