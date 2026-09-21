@@ -1,5 +1,5 @@
-import { MathApp } from "@/components/math-app";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return <MathApp />;
+  redirect("/pl");
 }
