@@ -3,6 +3,7 @@ import "katex/dist/katex.min.css";
 import "./globals.css";
 import "./polish.css";
 import "./audit.css";
+import "./iteration.css";
 
 export const metadata: Metadata = {
   title: "Mathly — nauka matematyki",
