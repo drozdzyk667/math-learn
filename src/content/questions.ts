@@ -26,9 +26,24 @@ export type GeneratedQuestion = {
   points: number;
 };
 
+let rngState = 1;
+
+function seedRng(unitId: string, seed: number) {
+  let value = (seed || 1) >>> 0;
+  for (let index = 0; index < unitId.length; index += 1) {
+    value = Math.imul(value ^ unitId.charCodeAt(index), 2654435761) >>> 0;
+  }
+  rngState = value || 1;
+}
+
+function random() {
+  rngState = (Math.imul(rngState, 1664525) + 1013904223) >>> 0;
+  return rngState / 4294967296;
+}
+
 const int = (min: number, max: number) =>
-  Math.floor(Math.random() * (max - min + 1)) + min;
-const pick = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)];
+  Math.floor(random() * (max - min + 1)) + min;
+const pick = <T,>(items: T[]) => items[Math.floor(random() * items.length)];
 const t = (locale: Locale, pl: string, en: string) =>
   locale === "pl" ? pl : en;
 const signed = (value: number) =>
@@ -36,7 +51,7 @@ const signed = (value: number) =>
 const fact = (n: number) =>
   Array.from({ length: n }, (_, i) => i + 1).reduce((a, b) => a * b, 1);
 const tokenFor = (unitId: string, seed: number) =>
-  `${unitId}-${seed}-${Math.random().toString(36).slice(2, 7)}`;
+  `${unitId}-${seed}-${Math.floor(random() * 1_000_000).toString(36)}`;
 
 function baseQuestion(
   unitId: string,
@@ -254,6 +269,7 @@ export function generateWordQuestion(
   locale: Locale,
   seed = Date.now(),
 ): GeneratedQuestion {
+  seedRng(unitId, seed);
   const token = tokenFor(unitId, seed);
 
   if (unitId === "real-numbers") {
@@ -426,6 +442,7 @@ export function generateReasoningQuestion(
   locale: Locale,
   seed = Date.now(),
 ): GeneratedQuestion {
+  seedRng(unitId, seed);
   const token = tokenFor(unitId, seed);
 
   if (unitId === "real-numbers") {
@@ -650,7 +667,7 @@ function makeMcq(
   const unique = [...new Set(candidates)].slice(0, 4);
   while (unique.length < 4) unique.push(answer + unique.length + 1);
   const shuffled = unique
-    .map((value) => ({ value, sort: Math.random() }))
+    .map((value) => ({ value, sort: random() }))
     .sort((a, b) => a.sort - b.sort)
     .map(({ value }, index) => ({
       id: String.fromCharCode(65 + index),
@@ -675,6 +692,7 @@ export function generateQuestion(
   seed = Date.now(),
   mode: QuestionMode = "mixed",
 ): GeneratedQuestion {
+  seedRng(unitId, seed);
   const token = tokenFor(unitId, seed);
   if (mode === "quick") return baseQuestion(unitId, locale, token);
   if (mode === "word") return generateWordQuestion(unitId, locale, seed);
