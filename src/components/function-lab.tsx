@@ -335,7 +335,7 @@ export function FunctionLab({
             {language === "pl" ? "INTERAKTYWNE LABORATORIUM" : "INTERACTIVE LAB"}
           </span>
           <h2 id="function-lab-title">{labels.title}</h2>
-          <p>{config.description}</p>
+          <p>{labels.sub} {config.description}</p>
 
           <div className="formula-big" aria-live="polite">
             <MathFormula tex={config.formula} display />
