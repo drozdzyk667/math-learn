@@ -23,7 +23,6 @@ import {
   FlaskConical,
   Languages,
   Lightbulb,
-  Lock,
   Moon,
   Play,
   RefreshCcw,
@@ -44,6 +43,7 @@ import {
   type GeneratedQuestion,
 } from "@/content/questions";
 import { copy, type Language } from "@/lib/i18n";
+import { lessonFormulaTex } from "@/content/lesson-details";
 import { FunctionLab } from "./function-lab";
 import { MathFormula } from "./math";
 
@@ -88,23 +88,6 @@ const initialProgress: Progress = {
   completedLessons: ["sets-intervals", "powers-roots", "identities"],
   answered: 12,
   correct: 9,
-};
-
-const lessonFormulaTex: Record<string, string> = {
-  "powers-roots": "a^m\\cdot a^n=a^{m+n}",
-  percentages: "K_n=K_0(1+p)^n",
-  logs: "\\log_a(xy)=\\log_a x+\\log_a y",
-  identities: "(a+b)^2=a^2+2ab+b^2",
-  "quadratic-equations": "x_{1,2}=\\frac{-b\\pm\\sqrt{\\Delta}}{2a}",
-  "linear-function": "f(x)=ax+b",
-  "quadratic-function": "f(x)=a(x-p)^2+q",
-  "arithmetic-sequence": "a_n=a_1+(n-1)r",
-  "geometric-sequence": "a_n=a_1q^{n-1}",
-  "trig-basics": "\\sin^2\\alpha+\\cos^2\\alpha=1",
-  "circle-equation": "(x-a)^2+(y-b)^2=r^2",
-  combinations: "\\binom nk=\\frac{n!}{k!(n-k)!}",
-  "classical-probability": "P(A)=\\frac{|A|}{|\\Omega|}",
-  derivatives: "f'(x)=\\lim_{h\\to0}\\frac{f(x+h)-f(x)}{h}",
 };
 
 const formulaTex: Record<string, string> = {
@@ -542,46 +525,6 @@ function Stat({
   );
 }
 
-function getLessonVariables(lessonId: string, lang: Language) {
-  const pl = lang === "pl";
-  const map: Record<string, Array<[string, string]>> = {
-    percentages: [
-      ["K₀", pl ? "wartość początkowa" : "initial value"],
-      ["p", pl ? "zmiana procentowa zapisana jako ułamek" : "percentage change as a decimal"],
-      ["n", pl ? "liczba okresów" : "number of periods"],
-      ["Kₙ", pl ? "wartość po n okresach" : "value after n periods"],
-    ],
-    "quadratic-equations": [
-      ["a, b, c", pl ? "współczynniki równania kwadratowego" : "quadratic coefficients"],
-      ["Δ", pl ? "wyróżnik: b² − 4ac" : "discriminant: b² − 4ac"],
-      ["x₁, x₂", pl ? "pierwiastki równania" : "equation roots"],
-    ],
-    "linear-function": [
-      ["a", pl ? "współczynnik kierunkowy" : "slope"],
-      ["b", pl ? "punkt przecięcia z osią Y" : "y-intercept"],
-      ["x", pl ? "argument funkcji" : "function input"],
-    ],
-    "quadratic-function": [
-      ["a", pl ? "kierunek i szerokość paraboli" : "opening and width"],
-      ["p", pl ? "współrzędna x wierzchołka" : "vertex x-coordinate"],
-      ["q", pl ? "współrzędna y wierzchołka" : "vertex y-coordinate"],
-    ],
-    "arithmetic-sequence": [
-      ["a₁", pl ? "pierwszy wyraz ciągu" : "first term"],
-      ["r", pl ? "różnica ciągu" : "common difference"],
-      ["n", pl ? "numer wyrazu" : "term number"],
-    ],
-    "classical-probability": [
-      ["|A|", pl ? "liczba wyników sprzyjających" : "favourable outcomes"],
-      ["|Ω|", pl ? "liczba wszystkich możliwych wyników" : "all possible outcomes"],
-    ],
-  };
-  return map[lessonId] ?? [
-    ["x", pl ? "niewiadoma lub argument zależny od zadania" : "unknown or input, depending on the problem"],
-    ["dane", pl ? "wartości podane w treści zadania" : "values given in the problem"],
-  ];
-}
-
 function Path({
   lang,
   completed,
@@ -608,7 +551,6 @@ function Path({
   ).length;
   const unitProgress = Math.round((doneInUnit / selectedUnit.lessons.length) * 100);
   const previewQuestion = generateQuestion(selected.unitId, lang, 20260921, "quick");
-  const wordQuestion = generateWordQuestion(selected.unitId, lang, 20260922);
 
   const selectLesson = (unitId: string, lessonId: string) => {
     setSelected({ unitId, lessonId });
@@ -880,12 +822,6 @@ function MathProblem({
       <p>{question.lead}</p>
       {question.math && <MathFormula tex={question.math} display />}
       {question.tail && <p>{question.tail}</p>}
-      {question.kind === "word" && (
-        <span className="question-kind-badge">NEW • {question.points} pkt</span>
-      )}
-      {question.kind === "mcq" && (
-        <span className="question-kind-badge mcq-badge">ABCD • {question.points} pkt</span>
-      )}
     </div>
   );
 }
