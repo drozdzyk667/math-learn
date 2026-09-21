@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   BarChart3,
@@ -46,7 +47,7 @@ import { copy, type Language } from "@/lib/i18n";
 import { FunctionLab } from "./function-lab";
 import { MathFormula } from "./math";
 
-type View =
+export type View =
   | "home"
   | "path"
   | "knowledge"
@@ -56,6 +57,22 @@ type View =
   | "tests"
   | "exam"
   | "profile";
+
+const viewPath: Record<View, string> = {
+  home: "",
+  path: "/path",
+  knowledge: "/knowledge",
+  formulas: "/formulas",
+  tasks: "/tasks",
+  lab: "/lab",
+  tests: "/tests",
+  exam: "/exam",
+  profile: "/profile",
+};
+
+export function viewHref(lang: Language, view: View) {
+  return `/${lang}${viewPath[view]}`;
+}
 
 type Progress = {
   xp: number;
@@ -119,17 +136,23 @@ function Logo() {
   );
 }
 
-export function MathApp() {
-  const [lang, setLang] = useState<Language>("pl");
+export function MathApp({
+  initialView = "home",
+  routeLang = "pl",
+}: {
+  initialView?: View;
+  routeLang?: Language;
+}) {
+  const router = useRouter();
+  const lang = routeLang;
+  const view = initialView;
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [view, setView] = useState<View>("home");
   const [progress, setProgress] = useState<Progress>(initialProgress);
   const [ready, setReady] = useState(false);
   const tr = copy[lang];
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      setLang(readLocal<Language>("mathly-lang", "pl"));
       setTheme(readLocal<"dark" | "light">("mathly-theme", "dark"));
       setProgress(readLocal<Progress>("mathly-progress", initialProgress));
       setReady(true);
@@ -153,6 +176,17 @@ export function MathApp() {
     if (!ready) return;
     localStorage.setItem("mathly-progress", JSON.stringify(progress));
   }, [ready, progress]);
+
+  const setView = (nextView: View) => {
+    router.push(viewHref(lang, nextView));
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  };
+
+  const switchLanguage = () => {
+    const nextLang: Language = lang === "pl" ? "en" : "pl";
+    router.push(viewHref(nextLang, view));
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  };
 
   const totalLessons = curriculum.reduce(
     (sum, unit) => sum + unit.lessons.length,
@@ -224,7 +258,7 @@ export function MathApp() {
           <div className="settings">
             <button
               aria-label={lang === "pl" ? "Switch to English" : "Przełącz na polski"}
-              onClick={() => setLang(lang === "pl" ? "en" : "pl")}
+              onClick={switchLanguage}
             >
               <Languages size={16} /> {lang.toUpperCase()}
             </button>
@@ -262,6 +296,10 @@ export function MathApp() {
               lang={lang}
               completed={progress.completedLessons}
               markLesson={markLesson}
+              onStartLesson={(lessonId) => {
+                router.push(`/${lang}/learn/${lessonId}`);
+                window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+              }}
             />
           )}
           {view === "knowledge" && <Knowledge lang={lang} />}
@@ -548,18 +586,18 @@ function Path({
   lang,
   completed,
   markLesson,
+  onStartLesson,
 }: {
   lang: Language;
   completed: string[];
   markLesson: (id: string) => void;
+  onStartLesson: (lessonId: string) => void;
 }) {
   const tr = copy[lang];
   const [selected, setSelected] = useState({
     unitId: curriculum[0].id,
     lessonId: curriculum[0].lessons[0].id,
   });
-  const [lessonOpen, setLessonOpen] = useState(false);
-
   const selectedUnit =
     curriculum.find((unit) => unit.id === selected.unitId) ?? curriculum[0];
   const selectedLesson =
@@ -574,7 +612,6 @@ function Path({
 
   const selectLesson = (unitId: string, lessonId: string) => {
     setSelected({ unitId, lessonId });
-    setLessonOpen(false);
   };
 
   return (
@@ -682,7 +719,7 @@ function Path({
           )}
 
           <div className="preview-actions preview-actions-strong">
-            <button className="lesson-start-button" onClick={() => setLessonOpen(true)}>
+            <button className="lesson-start-button" onClick={() => onStartLesson(selectedLesson.id)}>
               <Play size={18} fill="currentColor" />
               {lang === "pl" ? "Rozpocznij lekcję krok po kroku" : "Start step-by-step lesson"}
             </button>
@@ -698,92 +735,6 @@ function Path({
         </aside>
       </div>
 
-      {lessonOpen && (
-        <section className="lesson-room panel" aria-label={selectedLesson.title[lang]}>
-          <header className="lesson-room-header">
-            <div>
-              <span className="eyebrow">{lang === "pl" ? "LEKCJA INTERAKTYWNA" : "INTERACTIVE LESSON"}</span>
-              <h2>{selectedLesson.title[lang]}</h2>
-              <p>{selectedLesson.summary[lang]}</p>
-            </div>
-            <button className="ghost" onClick={() => setLessonOpen(false)}>
-              {lang === "pl" ? "Zamknij" : "Close"} ×
-            </button>
-          </header>
-
-          <div className="lesson-room-grid">
-            <article className="lesson-step">
-              <span className="lesson-step-number">1</span>
-              <div>
-                <small>{lang === "pl" ? "ZROZUM IDEĘ" : "UNDERSTAND THE IDEA"}</small>
-                <h3>{selectedUnit.title[lang]}</h3>
-                <p>
-                  {selectedUnit.short[lang]}{" "}
-                  {lang === "pl"
-                    ? "Najpierw rozpoznaj, jakie dane masz w zadaniu i czego dokładnie szukasz. Dopiero potem wybieraj wzór."
-                    : "First identify the known values and what you need to find. Only then choose a formula."}
-                </p>
-              </div>
-            </article>
-
-            <article className="lesson-step">
-              <span className="lesson-step-number">2</span>
-              <div>
-                <small>{lang === "pl" ? "ROZBIERZ WZÓR" : "BREAK DOWN THE FORMULA"}</small>
-                <h3>{lang === "pl" ? "Co oznacza każdy symbol?" : "What does each symbol mean?"}</h3>
-                {lessonFormulaTex[selectedLesson.id] ? (
-                  <>
-                    <div className="lesson-main-formula"><MathFormula tex={lessonFormulaTex[selectedLesson.id]} display /></div>
-                    <div className="variable-grid">
-                      {getLessonVariables(selectedLesson.id, lang).map(([symbol, meaning]) => (
-                        <div key={symbol}><b>{symbol}</b><span>{meaning}</span></div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p>{lang === "pl" ? "W tej lekcji nacisk jest na metodę i kolejność działań, nie na jeden wzór." : "This lesson focuses on method and order of operations rather than a single formula."}</p>
-                )}
-              </div>
-            </article>
-
-            <article className="lesson-step lesson-step-wide">
-              <span className="lesson-step-number">3</span>
-              <div>
-                <small>{lang === "pl" ? "PRZYKŁAD KROK PO KROKU" : "STEP-BY-STEP EXAMPLE"}</small>
-                <MathProblem question={previewQuestion} />
-                <ol className="worked-steps">
-                  <li>{lang === "pl" ? "Zapisz dane i określ niewiadomą." : "Write down the known values and the unknown."}</li>
-                  <li>{lang === "pl" ? "Wybierz regułę lub wzór pasujący do typu zadania." : "Choose the rule or formula that matches the problem type."}</li>
-                  <li>{lang === "pl" ? "Podstaw wartości, policz i sprawdź sens wyniku." : "Substitute, calculate and check whether the result makes sense."}</li>
-                </ol>
-                <div className="worked-answer">
-                  <span>{previewQuestion.solution}</span>
-                  {previewQuestion.solutionMath && <MathFormula tex={previewQuestion.solutionMath} display />}
-                </div>
-              </div>
-            </article>
-
-            <article className="lesson-step lesson-practice-card">
-              <span className="lesson-step-number">4</span>
-              <div>
-                <small>{lang === "pl" ? "ZADANIE PODSTAWOWE" : "CORE PRACTICE"}</small>
-                <MathProblem question={wordQuestion} compact />
-                <span className="level-chip">{lang === "pl" ? "PODSTAWA" : "CORE"}</span>
-              </div>
-            </article>
-
-            <article className="lesson-step lesson-pro-card">
-              <span className="lesson-step-number"><Lock size={16} /></span>
-              <div>
-                <small>{lang === "pl" ? "ROZSZERZENIE PRO" : "ADVANCED PRO"}</small>
-                <h3>{lang === "pl" ? "Zadania wieloetapowe i maturalne" : "Multi-step and exam-style problems"}</h3>
-                <p>{lang === "pl" ? "Dłuższe zadania opisowe, łączenie kilku metod, trudniejsze warianty i pełne rozwiązania krok po kroku." : "Longer word problems, multiple methods, harder variants and complete step-by-step solutions."}</p>
-                <span className="pro-chip">PRO</span>
-              </div>
-            </article>
-          </div>
-        </section>
-      )}
     </>
   );
 }
