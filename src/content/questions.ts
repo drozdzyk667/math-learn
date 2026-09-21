@@ -607,6 +607,69 @@ export function generateReasoningQuestion(
     };
   }
 
+  if (unitId === "algebra") {
+    const width = pick([5, 6, 7]);
+    const length = width + pick([3, 4]);
+    const innerArea = width * length;
+    const outerArea = (width + 2) * (length + 2);
+    const answer = outerArea - innerArea;
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Szkolna pracownia przygotowuje prostokątną makietę o wymiarach ${width} m × ${length} m. Wokół całej makiety ma powstać pas dekoracyjny o szerokości 1 m z każdej strony. Materiał zamawia się tylko na sam pas, nie na środek. Ile metrów kwadratowych materiału trzeba zamówić? Zapisz pole większego prostokąta i odejmij pole części wewnętrznej.`,
+        `A school workshop is building a rectangular display measuring ${width} m by ${length} m. A 1 m decorative border is added around every side. Material is needed only for the border, not the centre. How many square metres are required? Model the larger rectangle and subtract the inner area.`,
+      ),
+      math: `P=(${width}+2)(${length}+2)-${width}\\cdot${length}`,
+      answer,
+      answerSuffix: " m²",
+      hint: t(
+        locale,
+        "Każdy wymiar zewnętrzny zwiększa się o 2 m, bo pas znajduje się po obu stronach.",
+        "Each outside dimension increases by 2 m because the border appears on both sides.",
+      ),
+      solution: t(
+        locale,
+        "Najpierw liczymy pole całego prostokąta z obramowaniem, a potem odejmujemy pole środka.",
+        "Find the total area including the border, then subtract the inner rectangle.",
+      ),
+      solutionMath: `P=${width + 2}\\cdot${length + 2}-${innerArea}=${answer}`,
+    };
+  }
+
+  if (unitId === "equations") {
+    const device = pick([480, 600, 720]);
+    const monthly = pick([35, 40, 45]);
+    const months = pick([8, 10, 12]);
+    const total = device + monthly * months;
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Telefon kosztuje jednorazowo ${device} zł, a abonament ${monthly} zł miesięcznie. Po pewnym czasie łączny koszt telefonu i abonamentu wyniósł dokładnie ${total} zł. Ile pełnych miesięcy trwała wtedy umowa? Ułóż równanie opisujące całkowity koszt i wyznacz niewiadomą, zamiast odejmować liczby „na oko”.`,
+        `A phone costs ${device} up front and the plan costs ${monthly} per month. At some point the combined cost reached exactly ${total}. How many full months had passed? Build an equation for the total cost and solve it rather than guessing.`,
+      ),
+      math: `${device}+${monthly}x=${total}`,
+      answer: months,
+      answerSuffix: locale === "pl" ? " mies." : " months",
+      hint: t(
+        locale,
+        "Najpierw odejmij koszt telefonu, aby został sam koszt kolejnych miesięcy abonamentu.",
+        "Subtract the phone cost first so only the monthly-plan cost remains.",
+      ),
+      solution: t(locale, "Rozwiązujemy równanie liniowe krok po kroku:", "Solve the linear equation step by step:"),
+      solutionMath: `${monthly}x=${total - device}\\Rightarrow x=${months}`,
+    };
+  }
+
   if (unitId === "functions") {
     const startA = 8;
     const rateA = 3;
@@ -696,6 +759,38 @@ export function generateReasoningQuestion(
     };
   }
 
+  if (unitId === "trigonometry") {
+    const distance = pick([12, 18, 24]);
+    const eye = 1.7;
+    const answer = Number((distance + eye).toFixed(1));
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Uczeń stoi ${distance} m od budynku i obserwuje jego dach pod kątem 45° względem poziomu. Jego oczy znajdują się na wysokości ${eye} m nad ziemią. Przyjmując płaski teren, oblicz wysokość budynku. Zwróć uwagę, że tangens wyznaczy najpierw wysokość ponad poziomem oczu, więc wynik wymaga jeszcze jednego kroku.`,
+        `A student stands ${distance} m from a building and sees the roof at a 45° angle of elevation. Their eyes are ${eye} m above the ground. Assuming level ground, find the building height. Tangent first gives the height above eye level, so one more step is needed.`,
+      ),
+      math: `\\tan45^\\circ=\\frac{h-${eye}}{${distance}}`,
+      answer,
+      answerSuffix: " m",
+      hint: t(
+        locale,
+        "Dla 45° tangens wynosi 1. Najpierw wyznacz różnicę wysokości, potem dodaj wysokość oczu.",
+        "For 45°, tangent equals 1. Find the height difference first, then add eye height.",
+      ),
+      solution: t(
+        locale,
+        "Wyznaczamy wysokość ponad poziomem oczu i dopiero wtedy pełną wysokość budynku.",
+        "Find the height above eye level and then the full building height.",
+      ),
+      solutionMath: `h-${eye}=${distance}\\Rightarrow h=${answer}`,
+    };
+  }
+
   if (unitId === "planimetry") {
     const length = pick([20, 24, 30]);
     const width = pick([12, 15, 18]);
@@ -745,6 +840,37 @@ export function generateReasoningQuestion(
       hint: t(locale, "Po pierwszym losowaniu zmienia się zarówno liczba czerwonych kul, jak i liczba wszystkich kul.", "After the first draw, both the number of red balls and the total number change."),
       solution: t(locale, "Mnożymy prawdopodobieństwa kolejnych zdarzeń warunkowych:", "Multiply the probabilities of the consecutive conditional events:"),
       solutionMath: `P=\\frac{${red}}{${total}}\\cdot\\frac{${red - 1}}{${total - 1}}=${answer}\\%`,
+    };
+  }
+
+  if (unitId === "analytic-geometry") {
+    const x1 = 2;
+    const y1 = 2;
+    const x2 = 8;
+    const y2 = 10;
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    const answer = Number(Math.sqrt(mx * mx + my * my).toFixed(2));
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Na mapie dwa punkty dostaw mają współrzędne A=(${x1},${y1}) i B=(${x2},${y2}). Punkt przeładunkowy ma powstać dokładnie w połowie odcinka AB. Najpierw wyznacz współrzędne tego punktu, a następnie oblicz jego odległość od początku układu O=(0,0). Podaj wynik z dokładnością do dwóch miejsc po przecinku.`,
+        `On a map, delivery points are A=(${x1},${y1}) and B=(${x2},${y2}). A hub is placed exactly at the midpoint of AB. First find its coordinates, then calculate its distance from the origin O=(0,0). Give the result to two decimal places.`,
+      ),
+      math: `S=\\left(\\frac{x_A+x_B}{2},\\frac{y_A+y_B}{2}\\right),\\qquad d=\\sqrt{x_S^2+y_S^2}`,
+      answer,
+      hint: t(
+        locale,
+        "To zadanie ma dwa etapy: środek odcinka i dopiero potem wzór na odległość punktów.",
+        "This is a two-stage problem: midpoint first, then the distance formula.",
+      ),
+      solution: t(locale, "Wyznaczamy środek, a następnie jego odległość od O:", "Find the midpoint and then its distance from O:"),
+      solutionMath: `S=(${mx},${my}),\\qquad d=\\sqrt{${mx}^2+${my}^2}=${answer}`,
     };
   }
 
