@@ -26,6 +26,32 @@ function kindLabel(kind: GeneratedQuestion["kind"], lang: Language) {
   return lang === "pl" ? "Otwarte" : "Open";
 }
 
+function displayAnswer(
+  question: GeneratedQuestion,
+  rawAnswer: string,
+  lang: Language,
+) {
+  if (!rawAnswer.trim()) {
+    return lang === "pl" ? "Brak odpowiedzi" : "No answer";
+  }
+
+  if (question.kind === "mcq" && question.options) {
+    const value = Number(rawAnswer.replace(",", "."));
+    const option = question.options.find((item) => item.value === value);
+    return option ? `${option.id}. ${option.label}` : rawAnswer;
+  }
+
+  return rawAnswer + (question.answerSuffix ?? "");
+}
+
+function displayCorrectAnswer(question: GeneratedQuestion) {
+  if (question.kind === "mcq" && question.options) {
+    const option = question.options.find((item) => item.value === question.answer);
+    if (option) return `${option.id}. ${option.label}`;
+  }
+  return String(question.answer) + (question.answerSuffix ?? "");
+}
+
 export function AssessmentSummary({
   lang,
   questions,
@@ -233,16 +259,12 @@ export function AssessmentSummary({
                       <div className="bad">
                         <small>{lang === "pl" ? "Twoja odpowiedź" : "Your answer"}</small>
                         <b>
-                          {row.answered
-                            ? row.raw + (row.question.answerSuffix ?? "")
-                            : lang === "pl"
-                              ? "Brak odpowiedzi"
-                              : "No answer"}
+                          {displayAnswer(row.question, row.raw, lang)}
                         </b>
                       </div>
                       <div className="good">
                         <small>{lang === "pl" ? "Poprawna odpowiedź" : "Correct answer"}</small>
-                        <b>{row.question.answer}{row.question.answerSuffix ?? ""}</b>
+                        <b>{displayCorrectAnswer(row.question)}</b>
                       </div>
                     </div>
 
