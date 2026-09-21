@@ -39,6 +39,7 @@ import {
 import { curriculum } from "@/content/curriculum";
 import {
   generateQuestion,
+  generateReasoningQuestion,
   generateSet,
   generateWordQuestion,
   type GeneratedQuestion,
@@ -335,7 +336,15 @@ export function MathApp({
               lang={lang}
               progress={progress}
               mastery={mastery}
-              reset={() => setProgress(initialProgress)}
+              reset={() => {
+              setProgress(initialProgress);
+              for (let index = localStorage.length - 1; index >= 0; index -= 1) {
+                const key = localStorage.key(index);
+                if (key?.startsWith("mathly-lesson-rewards:")) {
+                  localStorage.removeItem(key);
+                }
+              }
+            }}
             />
           )}
         </div>
@@ -866,10 +875,11 @@ function Practice({
   const [showSolution, setShowSolution] = useState(false);
 
   const resetQuestion = (nextUnit = unitId, nextMode = mode) => {
+    const seed = Date.now();
     const next =
       nextMode === "word"
-        ? generateWordQuestion(nextUnit, lang)
-        : generateQuestion(nextUnit, lang, 0, "mixed");
+        ? generateReasoningQuestion(nextUnit, lang, seed)
+        : generateQuestion(nextUnit, lang, seed, "mixed");
     setQuestion(next);
     setAnswer("");
     setState("idle");
@@ -1439,19 +1449,52 @@ function Assessment({
       </div>
 
       {result === null && (
-        <div
-          className="assessment-floating-timer"
-          aria-label={lang === "pl" ? "Pozostały czas" : "Time remaining"}
+        <aside
+          className="assessment-floating-dock"
+          aria-label={lang === "pl" ? "Nawigacja arkusza" : "Paper navigation"}
         >
-          <Clock3 size={17} />
-          <b>
-            {timer !== undefined
-              ? String(Math.floor(timer / 60)).padStart(2, "0") +
-                ":" +
-                String(timer % 60).padStart(2, "0")
-              : durationLabel}
-          </b>
-        </div>
+          <div className="assessment-floating-timer">
+            <Clock3 size={17} />
+            <b>
+              {timer !== undefined
+                ? String(Math.floor(timer / 60)).padStart(2, "0") +
+                  ":" +
+                  String(timer % 60).padStart(2, "0")
+                : durationLabel}
+            </b>
+          </div>
+
+          <div className="assessment-floating-page">
+            <span>{lang === "pl" ? "STRONA" : "PAGE"}</span>
+            <b>{currentPage + 1}/{pages.length}</b>
+          </div>
+
+          <div className="assessment-floating-nav">
+            <button
+              className="secondary"
+              disabled={currentPage === 0}
+              onClick={() => goToPage(currentPage - 1)}
+              aria-label={lang === "pl" ? "Poprzednia strona" : "Previous page"}
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              className="primary"
+              disabled={currentPage === pages.length - 1}
+              onClick={() => goToPage(currentPage + 1)}
+              aria-label={lang === "pl" ? "Następna strona" : "Next page"}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          {currentPage === pages.length - 1 && (
+            <button className="assessment-dock-submit" onClick={submitAssessment}>
+              <CheckCircle2 size={17} />
+              {lang === "pl" ? "Oddaj" : "Submit"}
+            </button>
+          )}
+        </aside>
       )}
 
       <div className="paper-controls panel">
@@ -1715,21 +1758,26 @@ function Assessment({
           disabled={currentPage === 0}
           onClick={() => goToPage(currentPage - 1)}
         >
-          <ChevronLeft size={18} /> {lang === "pl" ? "Poprzednia strona" : "Previous page"}
+          <ChevronLeft size={18} />
+          {lang === "pl" ? "Poprzednia strona" : "Previous page"}
         </button>
 
-        {currentPage < pages.length - 1 ? (
+        <div className="assessment-bottom-nav-right">
           <button
             className="primary"
+            disabled={currentPage === pages.length - 1}
             onClick={() => goToPage(currentPage + 1)}
           >
-            {lang === "pl" ? "Następna strona" : "Next page"} <ChevronRight size={18} />
+            {lang === "pl" ? "Następna strona" : "Next page"}
+            <ChevronRight size={18} />
           </button>
-        ) : result === null ? (
-          <button className="primary finish" onClick={submitAssessment}>
-            {tr.finish} <CheckCircle2 size={18} />
-          </button>
-        ) : null}
+
+          {currentPage === pages.length - 1 && result === null && (
+            <button className="primary finish" onClick={submitAssessment}>
+              {tr.finish} <CheckCircle2 size={18} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
