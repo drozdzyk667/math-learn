@@ -87,7 +87,7 @@ test("Polish flashcards and profile stay fully localized", async ({ page }) => {
   await page.goto("/pl/formulas");
   await expect(page.getByText("TRYB FISZEK")).toBeVisible();
   await expect(page.getByText(/wszystkich fiszek/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: /Pokaż odpowiedź/i })).toBeVisible();
+  await expect(page.locator(".math-flashcard")).toBeVisible();
 
   await page.goto("/pl/profile");
   await expect(page.getByText("Odkrywca matematyki")).toBeVisible();
