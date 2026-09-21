@@ -1682,3 +1682,17 @@
     justify-content: center;
   }
 }
+
+
+/* WCAG AA contrast corrections discovered by automated axe audit */
+:root:not([data-theme="dark"]) .lesson-level-hud > div {
+  color: #765a00;
+}
+:root:not([data-theme="dark"]) .lesson-pro-teaser > span,
+:root:not([data-theme="dark"]) .pro-chip {
+  color: #765a00;
+}
+.practice-mode-tabs em {
+  background: #b72c5a;
+  color: #fff;
+}
