@@ -88,6 +88,8 @@ export function LessonExperience({
   const [reasoningTask, setReasoningTask] = useState<GeneratedQuestion | null>(null);
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<"idle" | "correct" | "wrong">("idle");
+  const [showHint, setShowHint] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   const [celebration, setCelebration] = useState(0);
   const [celebrationMessage, setCelebrationMessage] = useState("");
   const [finished, setFinished] = useState(false);
@@ -136,12 +138,20 @@ export function LessonExperience({
     triggerCelebration(lang === "pl" ? "+20 XP za etap" : "+20 XP for this step");
   };
 
-  const goToStep = (nextStep: number) => {
-    awardStep(step);
+  const selectStep = (nextStep: number, scroll = false) => {
     setStep(Math.max(0, Math.min(steps.length - 1, nextStep)));
     setAnswer("");
     setFeedback("idle");
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    setShowHint(false);
+    setShowAnswer(false);
+    if (scroll) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  };
+
+  const goToStep = (nextStep: number) => {
+    awardStep(step);
+    selectStep(nextStep, true);
   };
 
   const activeTask = step === 3 ? basicTask : reasoningTask;
@@ -247,7 +257,7 @@ export function LessonExperience({
               index === step ? "active" : "",
               index < step ? "done" : "",
             ].join(" ")}
-            onClick={() => setStep(index)}
+            onClick={() => selectStep(index)}
             aria-current={index === step ? "step" : undefined}
           >
             <span>{index < step ? <CheckCircle2 size={17} /> : index + 1}</span>
@@ -441,6 +451,61 @@ export function LessonExperience({
                   </button>
                 </div>
 
+                <div className="lesson-help-actions">
+                  <button
+                    type="button"
+                    className={showHint ? "lesson-hint-button active" : "lesson-hint-button"}
+                    onClick={() => setShowHint((value) => !value)}
+                    aria-expanded={showHint}
+                  >
+                    <Lightbulb size={17} />
+                    {showHint
+                      ? lang === "pl" ? "Ukryj podpowiedź" : "Hide hint"
+                      : lang === "pl" ? "Pokaż podpowiedź" : "Show hint"}
+                  </button>
+                  <button
+                    type="button"
+                    className={showAnswer ? "lesson-answer-button active" : "lesson-answer-button"}
+                    onClick={() => setShowAnswer((value) => !value)}
+                    aria-expanded={showAnswer}
+                  >
+                    <BookOpen size={17} />
+                    {showAnswer
+                      ? lang === "pl" ? "Ukryj odpowiedź" : "Hide answer"
+                      : lang === "pl" ? "Pokaż odpowiedź" : "Show answer"}
+                  </button>
+                </div>
+
+                {showHint && (
+                  <div className="lesson-reveal lesson-reveal-hint">
+                    <div>
+                      <Lightbulb size={18} />
+                      <b>{lang === "pl" ? "Podpowiedź" : "Hint"}</b>
+                    </div>
+                    <p>{activeTask.hint}</p>
+                    {activeTask.hintMath && (
+                      <MathFormula tex={activeTask.hintMath} display />
+                    )}
+                  </div>
+                )}
+
+                {showAnswer && (
+                  <div className="lesson-reveal lesson-reveal-answer">
+                    <div>
+                      <BookOpen size={18} />
+                      <b>{lang === "pl" ? "Odpowiedź i rozwiązanie" : "Answer and solution"}</b>
+                    </div>
+                    <strong>
+                      {lang === "pl" ? "Poprawna odpowiedź: " : "Correct answer: "}
+                      {activeTask.answer}{activeTask.answerSuffix ?? ""}
+                    </strong>
+                    <p>{activeTask.solution}</p>
+                    {activeTask.solutionMath && (
+                      <MathFormula tex={activeTask.solutionMath} display />
+                    )}
+                  </div>
+                )}
+
                 {feedback !== "idle" && (
                   <div
                     className={feedback === "correct" ? "lesson-feedback correct" : "lesson-feedback wrong"}
@@ -455,7 +520,9 @@ export function LessonExperience({
                     <span>
                       {feedback === "correct"
                         ? activeTask.solution
-                        : activeTask.hint}
+                        : lang === "pl"
+                          ? "Sprawdź tok obliczeń. Jeśli utknąłeś, otwórz żółtą podpowiedź albo pokaż pełną odpowiedź."
+                          : "Check your calculation. If you are stuck, open the yellow hint or reveal the full answer."}
                     </span>
                     {feedback === "correct" && activeTask.solutionMath && (
                       <MathFormula tex={activeTask.solutionMath} display />
