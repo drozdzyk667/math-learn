@@ -8,6 +8,7 @@ import {
   Target,
   Trophy,
 } from "lucide-react";
+import type { CSSProperties } from "react";
 import { curriculum } from "@/content/curriculum";
 import type { GeneratedQuestion } from "@/content/questions";
 import type { Language } from "@/lib/i18n";
@@ -112,7 +113,7 @@ export function AssessmentSummary({
   return (
     <section className="assessment-summary panel" aria-labelledby="assessment-summary-title">
       <div className="assessment-summary-hero">
-        <div className="assessment-score-ring" style={{ "--score": percent + "%" } as React.CSSProperties}>
+        <div className="assessment-score-ring" style={{ "--score": percent + "%" } as CSSProperties}>
           <span>{percent}%</span>
           <small>{lang === "pl" ? "wyniku" : "score"}</small>
         </div>
