@@ -821,7 +821,7 @@ function Practice({
   return (
     <>
       <PageHead
-        eyebrow={lang === "pl" ? "TRENING • NEW: ZADANIA OPISOWE" : "PRACTICE • NEW: WORD PROBLEMS"}
+        eyebrow={lang === "pl" ? "TRENING • ZADANIA OPISOWE" : "PRACTICE • NEW: WORD PROBLEMS"}
         title={tr.tasksTitle}
         text={
           lang === "pl"
@@ -837,7 +837,7 @@ function Practice({
         </button>
         <button className={mode === "word" ? "active" : ""} onClick={() => selectMode("word")}>
           <BookOpen size={18} />
-          {lang === "pl" ? "Zadania opisowe" : "Word problems"} <em>NEW</em>
+          {lang === "pl" ? "Zadania opisowe" : "Word problems"} <em>{lang === "pl" ? "NOWE" : "NEW"}</em>
         </button>
       </div>
 
