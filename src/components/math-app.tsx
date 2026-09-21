@@ -126,10 +126,13 @@ export function MathApp() {
   const tr = copy[lang];
 
   useEffect(() => {
-    setLang(readLocal<Language>("mathly-lang", "pl"));
-    setTheme(readLocal<"dark" | "light">("mathly-theme", "dark"));
-    setProgress(readLocal<Progress>("mathly-progress", initialProgress));
-    setReady(true);
+    const frame = window.requestAnimationFrame(() => {
+      setLang(readLocal<Language>("mathly-lang", "pl"));
+      setTheme(readLocal<"dark" | "light">("mathly-theme", "dark"));
+      setProgress(readLocal<Progress>("mathly-progress", initialProgress));
+      setReady(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
@@ -524,8 +527,8 @@ function Path({
     selectedUnit.lessons[0];
 
   const previewQuestion = useMemo(
-    () => generateQuestion(selectedUnit.id, lang, 20260921),
-    [selectedUnit.id, lang],
+    () => generateQuestion(selected.unitId, lang, 20260921),
+    [selected.unitId, lang],
   );
 
   return (
@@ -857,11 +860,14 @@ function Practice({
   const [showSolution, setShowSolution] = useState(false);
 
   useEffect(() => {
-    setQuestion(generateQuestion(unitId, lang));
-    setAnswer("");
-    setState("idle");
-    setShowHint(false);
-    setShowSolution(false);
+    const frame = window.requestAnimationFrame(() => {
+      setQuestion(generateQuestion(unitId, lang));
+      setAnswer("");
+      setState("idle");
+      setShowHint(false);
+      setShowSolution(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [unitId, lang]);
 
   const randomise = () => {
@@ -1168,9 +1174,11 @@ function Exam({
   }, [started, result]);
 
   useEffect(() => {
-    if (started && remaining === 0 && result === null && questions.length) {
-      finish();
+    if (!(started && remaining === 0 && result === null && questions.length)) {
+      return;
     }
+    const frame = window.requestAnimationFrame(() => finish());
+    return () => window.cancelAnimationFrame(frame);
   }, [started, remaining, result, questions.length, finish]);
 
   if (started) {
