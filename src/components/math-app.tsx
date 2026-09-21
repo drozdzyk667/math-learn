@@ -1243,6 +1243,74 @@ function Practice({
   );
 }
 
+function AssessmentIntro({
+  lang,
+  kind,
+  title,
+  duration,
+  questionCount,
+  onStart,
+  onBack,
+}: {
+  lang: Language;
+  kind: "test" | "exam";
+  title: string;
+  duration: number;
+  questionCount: number;
+  onStart: () => void;
+  onBack?: () => void;
+}) {
+  const exam = kind === "exam";
+  return (
+    <section className="assessment-intro panel">
+      <div className="assessment-intro-hero">
+        <span className="eyebrow">
+          {exam
+            ? lang === "pl" ? "PRÓBNA MATURA" : "MOCK EXAM"
+            : lang === "pl" ? "KLASÓWKA" : "UNIT TEST"}
+        </span>
+        <h1>{title}</h1>
+        <p>
+          {lang === "pl"
+            ? `Po kliknięciu „Start” ${exam ? "rozpocznie się odliczanie czasu" : "otworzy się właściwy arkusz"}. Otrzymasz mieszankę krótkich obliczeń, pytań ABCD i zadań opisowych.`
+            : `After pressing Start, ${exam ? "the countdown begins" : "the paper opens"}. You will get a mix of short calculations, multiple-choice and word problems.`}
+        </p>
+      </div>
+
+      <div className="assessment-intro-stats">
+        <div><Clock3 size={24} /><b>{duration} min</b><span>{lang === "pl" ? "czas" : "time"}</span></div>
+        <div><BookOpen size={24} /><b>{questionCount}</b><span>{lang === "pl" ? "zadań" : "problems"}</span></div>
+        <div><BadgeCheck size={24} /><b>ABCD</b><span>{lang === "pl" ? "pytania zamknięte" : "multiple choice"}</span></div>
+        <div><Sparkles size={24} /><b>NEW</b><span>{lang === "pl" ? "zadania opisowe" : "word problems"}</span></div>
+      </div>
+
+      <div className="assessment-intro-checklist">
+        <b>{lang === "pl" ? "Zanim zaczniesz" : "Before you start"}</b>
+        <ul>
+          <li>{lang === "pl" ? "przygotuj kartkę na dodatkowe obliczenia" : "prepare paper for extra working"}</li>
+          <li>{lang === "pl" ? "arkusz ma kilka stron — przechodzisz między nimi przyciskami Dalej/Wstecz" : "the paper has several pages with Next/Back navigation"}</li>
+          <li>{lang === "pl" ? "odpowiedzi zapisują się podczas przechodzenia między stronami" : "answers are preserved while moving between pages"}</li>
+          {exam && (
+            <li>{lang === "pl" ? "po starcie licznik 60 minut rusza od razu; podpowiedzi są wyłączone" : "the 60-minute timer starts immediately and hints are disabled"}</li>
+          )}
+        </ul>
+      </div>
+
+      <div className="assessment-intro-actions">
+        {onBack && (
+          <button className="secondary" onClick={onBack}>
+            {lang === "pl" ? "Wróć" : "Back"}
+          </button>
+        )}
+        <button className="assessment-start-button" onClick={onStart}>
+          <Play size={19} fill="currentColor" />
+          {lang === "pl" ? "Start — otwórz arkusz" : "Start — open paper"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function Tests({
   lang,
   onFinish,
@@ -1251,40 +1319,59 @@ function Tests({
   onFinish: (score: number) => void;
 }) {
   const tr = copy[lang];
-  const [active, setActive] = useState<{
-    unitId: string;
-    questions: GeneratedQuestion[];
-  } | null>(null);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<number | null>(null);
 
-  const start = (unitId: string) => {
-    setActive({ unitId, questions: generateSet([unitId], 8, lang) });
+  const selectedUnit = selectedUnitId
+    ? curriculum.find((unit) => unit.id === selectedUnitId)
+    : null;
+
+  const start = () => {
+    if (!selectedUnitId) return;
+    setQuestions(generateSet([selectedUnitId], 12, lang));
     setAnswers({});
     setResult(null);
   };
 
   const finish = () => {
-    if (!active) return;
-    const score = scoreQuestions(active.questions, answers);
+    const score = scoreQuestions(questions, answers);
     setResult(score);
     onFinish(score);
   };
 
-  if (active) {
-    const unit = curriculum.find((item) => item.id === active.unitId);
+  if (selectedUnit && !questions.length) {
+    return (
+      <AssessmentIntro
+        lang={lang}
+        kind="test"
+        title={selectedUnit.title[lang]}
+        duration={30}
+        questionCount={12}
+        onBack={() => setSelectedUnitId(null)}
+        onStart={start}
+      />
+    );
+  }
+
+  if (selectedUnit && questions.length) {
     return (
       <Assessment
         lang={lang}
-        title={unit?.title[lang] ?? tr.classTests}
+        title={selectedUnit.title[lang]}
         kind="test"
-        durationLabel="25 min"
-        questions={active.questions}
+        durationLabel="30 min"
+        questions={questions}
         answers={answers}
         setAnswers={setAnswers}
         result={result}
         onFinish={finish}
-        back={() => setActive(null)}
+        back={() => {
+          setQuestions([]);
+          setAnswers({});
+          setResult(null);
+        }}
       />
     );
   }
@@ -1292,9 +1379,13 @@ function Tests({
   return (
     <>
       <PageHead
-        eyebrow={lang === "pl" ? "SPRAWDŹ SIĘ" : "CHECKPOINTS"}
+        eyebrow={lang === "pl" ? "SPRAWDŹ SIĘ • NEW: OPISOWE + ABCD" : "CHECKPOINTS • NEW: WORD + MCQ"}
         title={tr.classTests}
-        text={tr.classTestsSub}
+        text={
+          lang === "pl"
+            ? "Każda klasówka ma teraz 12 zadań w kilku formatach i kilka stron arkusza."
+            : "Each unit test now contains 12 mixed-format problems across several paper pages."
+        }
       />
       <div className="test-grid">
         {curriculum.map((unit) => (
@@ -1302,13 +1393,10 @@ function Tests({
             <span className={"unit-badge " + unit.accent}>{unit.roman}</span>
             <div>
               <h3>{unit.title[lang]}</h3>
-              <p>
-                {unit.lessons.length} {lang === "pl" ? "lekcje" : "lessons"}
-                {" • "}8 {tr.questions}{" • "}~25 min
-              </p>
+              <p>12 {tr.questions} • ABCD • {lang === "pl" ? "opisowe" : "word problems"} • ~30 min</p>
             </div>
-            <button className="primary small" onClick={() => start(unit.id)}>
-              {tr.testStart} <ChevronRight size={16} />
+            <button className="primary small" onClick={() => setSelectedUnitId(unit.id)}>
+              {lang === "pl" ? "Zobacz wstęp" : "Open intro"} <ChevronRight size={16} />
             </button>
           </article>
         ))}
@@ -1327,15 +1415,11 @@ function Exam({
   onFinish: (score: number, total: number) => void;
 }) {
   const tr = copy[lang];
-  const availableUnits = useMemo(
-    () =>
-      curriculum
-        .filter((unit) =>
-          unit.lessons.some((lesson) => completedLessons.includes(lesson.id)),
-        )
-        .map((unit) => unit.id),
-    [completedLessons],
-  );
+  const availableUnits = curriculum
+    .filter((unit) =>
+      unit.lessons.some((lesson) => completedLessons.includes(lesson.id)),
+    )
+    .map((unit) => unit.id);
 
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -1370,66 +1454,50 @@ function Exam({
     return () => window.cancelAnimationFrame(frame);
   }, [started, remaining, result, questions.length, finish]);
 
-  if (started) {
+  if (!started) {
     return (
-      <Assessment
-        lang={lang}
-        title={lang === "pl" ? "Próbna matura z matematyki" : "Mathematics mock exam"}
-        kind="exam"
-        durationLabel="60 min"
-        questions={questions}
-        answers={answers}
-        setAnswers={setAnswers}
-        result={result}
-        onFinish={finish}
-        back={() => setStarted(false)}
-        timer={remaining}
-      />
+      <>
+        <PageHead
+          eyebrow={lang === "pl" ? "TRYB EGZAMINACYJNY • NEW: OPISOWE + ABCD" : "EXAM MODE • NEW: WORD + MCQ"}
+          title={tr.examTitle}
+          text={
+            lang === "pl"
+              ? "Najpierw zobaczysz zasady. Dopiero kliknięcie Start uruchomi 60-minutowy licznik."
+              : "Review the rules first. The 60-minute countdown starts only after pressing Start."
+          }
+        />
+        <AssessmentIntro
+          lang={lang}
+          kind="exam"
+          title={lang === "pl" ? "Próbna matura z matematyki" : "Mathematics mock exam"}
+          duration={60}
+          questionCount={20}
+          onStart={() => {
+            setQuestions(generateSet(units, 20, lang));
+            setAnswers({});
+            setResult(null);
+            setRemaining(3600);
+            setStarted(true);
+          }}
+        />
+      </>
     );
   }
 
   return (
-    <>
-      <PageHead
-        eyebrow={lang === "pl" ? "TRYB EGZAMINACYJNY" : "EXAM MODE"}
-        title={tr.examTitle}
-        text={tr.examSub}
-      />
-      <section className="panel exam-card">
-        <div className="clock">
-          <Clock3 size={42} />
-          <b>60:00</b>
-          <span>{lang === "pl" ? "bez podpowiedzi" : "no hints"}</span>
-        </div>
-        <div>
-          <h2>{lang === "pl" ? "Twój spersonalizowany arkusz" : "Your personalised paper"}</h2>
-          <p>
-            {lang === "pl"
-              ? "12 losowych zadań wyłącznie z działów, które już rozpocząłeś. Każda próba tworzy nowy arkusz."
-              : "12 random problems only from units you have started. Every attempt creates a new paper."}
-          </p>
-          <div className="tags">
-            {units.map((id) => (
-              <span key={id}>
-                {curriculum.find((unit) => unit.id === id)?.title[lang]}
-              </span>
-            ))}
-          </div>
-          <button
-            className="primary"
-            onClick={() => {
-              setQuestions(generateSet(units, 12, lang));
-              setAnswers({});
-              setResult(null);
-              setRemaining(3600);
-              setStarted(true);
-            }}
-          >
-            <Play size={17} fill="currentColor" /> {tr.examStart}
-          </button>
-        </div>
-      </section>
-    </>
+    <Assessment
+      lang={lang}
+      title={lang === "pl" ? "Próbna matura z matematyki" : "Mathematics mock exam"}
+      kind="exam"
+      durationLabel="60 min"
+      questions={questions}
+      answers={answers}
+      setAnswers={setAnswers}
+      result={result}
+      onFinish={finish}
+      back={() => setStarted(false)}
+      timer={remaining}
+    />
   );
 }
 
@@ -1479,9 +1547,16 @@ function Assessment({
   const tr = copy[lang];
   const pages = chunkQuestions(questions);
   const [paperZoom, setPaperZoom] = useState(125);
+  const [currentPage, setCurrentPage] = useState(0);
   const paperStyle = {
     "--paper-scale": paperZoom / 100,
   } as CSSProperties;
+  const page = pages[currentPage] ?? [];
+  const firstQuestionIndex = currentPage * 4;
+
+  const setQuestionAnswer = (questionId: string, value: string) => {
+    setAnswers((current) => ({ ...current, [questionId]: value }));
+  };
 
   return (
     <div className="assessment-screen">
@@ -1497,38 +1572,68 @@ function Assessment({
           </span>
           <b>{title}</b>
         </div>
-        <div className="assessment-right">
-          <div
-            className="zoom-controls"
-            role="group"
-            aria-label={lang === "pl" ? "Powiększenie arkusza" : "Paper zoom"}
+        {timer !== undefined ? (
+          <b className="timer">
+            {String(Math.floor(timer / 60)).padStart(2, "0")}:
+            {String(timer % 60).padStart(2, "0")}
+          </b>
+        ) : (
+          <b className="timer">{durationLabel}</b>
+        )}
+      </div>
+
+      <div className="paper-controls panel">
+        <div
+          className="zoom-controls"
+          role="group"
+          aria-label={lang === "pl" ? "Powiększenie arkusza" : "Paper zoom"}
+        >
+          <button
+            type="button"
+            onClick={() => setPaperZoom((value) => Math.max(80, value - 10))}
+            disabled={paperZoom <= 80}
+            aria-label={lang === "pl" ? "Pomniejsz arkusz" : "Zoom out"}
           >
-            <button
-              type="button"
-              onClick={() => setPaperZoom((value) => Math.max(80, value - 10))}
-              disabled={paperZoom <= 80}
-              aria-label={lang === "pl" ? "Pomniejsz arkusz" : "Zoom out"}
-            >
-              <ZoomOut size={20} />
-            </button>
-            <span aria-live="polite">{paperZoom}%</span>
-            <button
-              type="button"
-              onClick={() => setPaperZoom((value) => Math.min(150, value + 10))}
-              disabled={paperZoom >= 150}
-              aria-label={lang === "pl" ? "Powiększ arkusz" : "Zoom in"}
-            >
-              <ZoomIn size={20} />
-            </button>
-          </div>
-          {timer !== undefined ? (
-            <b className="timer">
-              {String(Math.floor(timer / 60)).padStart(2, "0")}:
-              {String(timer % 60).padStart(2, "0")}
-            </b>
-          ) : (
-            <b className="timer">{durationLabel}</b>
-          )}
+            <ZoomOut size={21} />
+          </button>
+          <span aria-live="polite">{paperZoom}%</span>
+          <button
+            type="button"
+            onClick={() => setPaperZoom((value) => Math.min(150, value + 10))}
+            disabled={paperZoom >= 150}
+            aria-label={lang === "pl" ? "Powiększ arkusz" : "Zoom in"}
+          >
+            <ZoomIn size={21} />
+          </button>
+        </div>
+
+        <div className="paper-page-status">
+          <span>{lang === "pl" ? "Strona" : "Page"}</span>
+          <b>{currentPage + 1} / {pages.length}</b>
+          <small>
+            {firstQuestionIndex + 1}–{Math.min(firstQuestionIndex + page.length, questions.length)} / {questions.length} {tr.questions}
+          </small>
+        </div>
+
+        <div className="paper-nav-buttons">
+          <button
+            className="secondary"
+            disabled={currentPage === 0}
+            onClick={() => setCurrentPage((pageNumber) => Math.max(0, pageNumber - 1))}
+          >
+            <ChevronLeft size={18} /> {lang === "pl" ? "Wstecz" : "Back"}
+          </button>
+          <button
+            className="primary"
+            disabled={currentPage === pages.length - 1}
+            onClick={() =>
+              setCurrentPage((pageNumber) =>
+                Math.min(pages.length - 1, pageNumber + 1),
+              )
+            }
+          >
+            {lang === "pl" ? "Dalej" : "Next"} <ChevronRight size={18} />
+          </button>
         </div>
       </div>
 
@@ -1548,77 +1653,105 @@ function Assessment({
       )}
 
       <div className="paper-viewport">
-        <div className="paper-stack" style={paperStyle}>
-        {pages.map((page, pageIndex) => {
-          const firstQuestionIndex = pageIndex * 4;
-          return (
-            <section className="paper-page" key={pageIndex}>
-              <header className="paper-header">
-                <div className="paper-brand">
-                  <span>Σ</span>
-                  <div><b>MATHLY</b><small>ARKUSZ MATEMATYCZNY</small></div>
+        <div className="paper-stack single-page" style={paperStyle}>
+          <section className="paper-page" key={currentPage}>
+            <header className="paper-header">
+              <div className="paper-brand">
+                <span>Σ</span>
+                <div><b>MATHLY</b><small>ARKUSZ MATEMATYCZNY</small></div>
+              </div>
+              <div className="paper-meta">
+                <span>
+                  {kind === "exam"
+                    ? lang === "pl" ? "PRÓBNA MATURA" : "MOCK EXAM"
+                    : lang === "pl" ? "KLASÓWKA" : "UNIT TEST"}
+                </span>
+                <b>{title}</b>
+                <small>{durationLabel} • {questions.length} {tr.questions}</small>
+              </div>
+            </header>
+
+            {currentPage === 0 && (
+              <>
+                <div className="paper-student">
+                  <label>{lang === "pl" ? "Imię i nazwisko" : "Name"}<span /></label>
+                  <label>{lang === "pl" ? "Data" : "Date"}<span /></label>
                 </div>
-                <div className="paper-meta">
+                <div className="paper-instructions">
+                  <b>{lang === "pl" ? "Instrukcja" : "Instructions"}</b>
                   <span>
-                    {kind === "exam"
-                      ? lang === "pl" ? "PRÓBNA MATURA" : "MOCK EXAM"
-                      : lang === "pl" ? "KLASÓWKA" : "UNIT TEST"}
+                    {lang === "pl"
+                      ? "Czytaj uważnie treść. W zadaniach ABCD wybierz jedną odpowiedź. W zadaniach otwartych zapisz wynik, a obliczenia wykonuj w wyznaczonym miejscu."
+                      : "Read carefully. Choose one option in MCQ tasks. Enter the final result for open tasks and use the working space."}
                   </span>
-                  <b>{title}</b>
-                  <small>{durationLabel} • {questions.length} {tr.questions}</small>
                 </div>
-              </header>
+              </>
+            )}
 
-              {pageIndex === 0 && (
-                <>
-                  <div className="paper-student">
-                    <label>{lang === "pl" ? "Imię i nazwisko" : "Name"}<span /></label>
-                    <label>{lang === "pl" ? "Data" : "Date"}<span /></label>
-                  </div>
-                  <div className="paper-instructions">
-                    <b>{lang === "pl" ? "Instrukcja" : "Instructions"}</b>
-                    <span>
-                      {lang === "pl"
-                        ? "Zapisuj tok rozumowania w wyznaczonym miejscu. Wpisz wynik w polu odpowiedzi."
-                        : "Show your reasoning in the working area and enter the final result in the answer field."}
-                    </span>
-                  </div>
-                </>
-              )}
+            <div className="paper-questions">
+              {page.map((question, localIndex) => {
+                const questionIndex = firstQuestionIndex + localIndex;
+                const numeric = Number(
+                  (answers[question.id] ?? "").replace(",", "."),
+                );
+                const ok =
+                  Number.isFinite(numeric) &&
+                  Math.abs(numeric - question.answer) < 0.011;
 
-              <div className="paper-questions">
-                {page.map((question, localIndex) => {
-                  const questionIndex = firstQuestionIndex + localIndex;
-                  const numeric = Number(
-                    (answers[question.id] ?? "").replace(",", "."),
-                  );
-                  const ok =
-                    Number.isFinite(numeric) &&
-                    Math.abs(numeric - question.answer) < 0.011;
+                return (
+                  <article className="paper-question" key={question.id}>
+                    <div className="paper-question-number">{questionIndex + 1}</div>
+                    <div className="paper-question-body">
+                      <div className="paper-question-head">
+                        <span>
+                          {question.kind === "mcq"
+                            ? "ABCD"
+                            : question.kind === "word"
+                              ? "NEW • OPISOWE"
+                              : lang === "pl" ? "OTWARTE" : "OPEN"}
+                        </span>
+                        <b>{question.points} pkt</b>
+                      </div>
+                      <MathProblem question={question} />
 
-                  return (
-                    <article className="paper-question" key={question.id}>
-                      <div className="paper-question-number">{questionIndex + 1}</div>
-                      <div className="paper-question-body">
-                        <MathProblem question={question} />
+                      {question.kind === "mcq" && question.options ? (
+                        <div className="paper-mcq-options">
+                          {question.options.map((option) => (
+                            <button
+                              key={option.id}
+                              disabled={result !== null}
+                              className={
+                                answers[question.id] === String(option.value)
+                                  ? "selected"
+                                  : ""
+                              }
+                              onClick={() =>
+                                setQuestionAnswer(
+                                  question.id,
+                                  String(option.value),
+                                )
+                              }
+                            >
+                              <b>{option.id}</b>
+                              <span>{option.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
                         <div className="paper-answer-row">
-                          <label>
-                            {lang === "pl" ? "Odpowiedź:" : "Answer:"}
-                          </label>
+                          <label>{lang === "pl" ? "Odpowiedź:" : "Answer:"}</label>
                           <div className="paper-input-wrap">
                             <input
                               disabled={result !== null}
                               value={answers[question.id] ?? ""}
                               onChange={(event) =>
-                                setAnswers((current) => ({
-                                  ...current,
-                                  [question.id]: event.target.value,
-                                }))
+                                setQuestionAnswer(question.id, event.target.value)
                               }
                               inputMode="decimal"
                               aria-label={
-                                (lang === "pl" ? "Odpowiedź do zadania " : "Answer for question ") +
-                                (questionIndex + 1)
+                                (lang === "pl"
+                                  ? "Odpowiedź do zadania "
+                                  : "Answer for question ") + (questionIndex + 1)
                               }
                             />
                             {question.answerSuffix && <span>{question.answerSuffix}</span>}
@@ -1633,40 +1766,60 @@ function Assessment({
                             </b>
                           )}
                         </div>
-                        <div className="working-space" aria-label={lang === "pl" ? "Miejsce na rozwiązanie" : "Working area"} />
-                        {result !== null && (
-                          <div className="paper-solution">
-                            <span>{question.solution}</span>
-                            {question.solutionMath && (
-                              <MathFormula tex={question.solutionMath} />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+                      )}
 
-              <footer className="paper-footer">
-                <span>Mathly</span>
-                <span>
-                  {lang === "pl" ? "strona" : "page"} {pageIndex + 1}/{pages.length}
-                </span>
-              </footer>
-            </section>
-          );
-        })}
+                      <div className={question.kind === "word" ? "working-space large" : "working-space"} />
+
+                      {result !== null && (
+                        <div className="paper-solution">
+                          <span>{question.solution}</span>
+                          {question.solutionMath && (
+                            <MathFormula tex={question.solutionMath} />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <footer className="paper-footer">
+              <span>Mathly</span>
+              <span>
+                {lang === "pl" ? "strona" : "page"} {currentPage + 1}/{pages.length}
+              </span>
+            </footer>
+          </section>
         </div>
       </div>
 
-      {result === null && (
-        <div className="assessment-submit">
+      <div className="assessment-bottom-nav">
+        <button
+          className="secondary"
+          disabled={currentPage === 0}
+          onClick={() => setCurrentPage((pageNumber) => Math.max(0, pageNumber - 1))}
+        >
+          <ChevronLeft size={18} /> {lang === "pl" ? "Poprzednia strona" : "Previous page"}
+        </button>
+
+        {currentPage < pages.length - 1 ? (
+          <button
+            className="primary"
+            onClick={() =>
+              setCurrentPage((pageNumber) =>
+                Math.min(pages.length - 1, pageNumber + 1),
+              )
+            }
+          >
+            {lang === "pl" ? "Następna strona" : "Next page"} <ChevronRight size={18} />
+          </button>
+        ) : result === null ? (
           <button className="primary finish" onClick={onFinish}>
             {tr.finish} <CheckCircle2 size={18} />
           </button>
-        </div>
-      )}
+        ) : null}
+      </div>
     </div>
   );
 }
