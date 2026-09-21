@@ -222,10 +222,17 @@ export function LessonExperience({
           </div>
         </div>
 
-        <div className="lesson-level-hud" aria-label={`Level ${currentLevel}, ${progress.xp} XP`}>
+        <div
+          className="lesson-level-hud"
+          aria-label={
+            lang === "pl"
+              ? `Poziom ${currentLevel}, ${progress.xp} XP`
+              : `Level ${currentLevel}, ${progress.xp} XP`
+          }
+        >
           <div>
             <Star size={16} fill="currentColor" />
-            <b>LV {currentLevel}</b>
+            <b>{lang === "pl" ? "POZ." : "LV"} {currentLevel}</b>
           </div>
           <span><Zap size={15} /> {progress.xp} XP</span>
           <i><span style={{ width: levelProgress + "%" }} /></i>
