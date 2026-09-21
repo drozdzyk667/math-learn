@@ -928,8 +928,14 @@ function MathProblem({
   return (
     <div className={compact ? "math-problem compact" : "math-problem"}>
       <p>{question.lead}</p>
-      <MathFormula tex={question.math} display />
+      {question.math && <MathFormula tex={question.math} display />}
       {question.tail && <p>{question.tail}</p>}
+      {question.kind === "word" && (
+        <span className="question-kind-badge">NEW • {question.points} pkt</span>
+      )}
+      {question.kind === "mcq" && (
+        <span className="question-kind-badge mcq-badge">ABCD • {question.points} pkt</span>
+      )}
     </div>
   );
 }
@@ -1020,31 +1026,35 @@ function Practice({
 }) {
   const tr = copy[lang];
   const [unitId, setUnitId] = useState("real-numbers");
+  const [mode, setMode] = useState<"mixed" | "word">("mixed");
   const [question, setQuestion] = useState(() =>
-    generateQuestion("real-numbers", lang),
+    generateQuestion("real-numbers", lang, Date.now(), "mixed"),
   );
   const [answer, setAnswer] = useState("");
   const [state, setState] = useState<"idle" | "correct" | "wrong">("idle");
   const [showHint, setShowHint] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
 
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setQuestion(generateQuestion(unitId, lang));
-      setAnswer("");
-      setState("idle");
-      setShowHint(false);
-      setShowSolution(false);
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [unitId, lang]);
-
-  const randomise = () => {
-    setQuestion(generateQuestion(unitId, lang));
+  const resetQuestion = (nextUnit = unitId, nextMode = mode) => {
+    const next =
+      nextMode === "word"
+        ? generateWordQuestion(nextUnit, lang)
+        : generateQuestion(nextUnit, lang, Date.now(), "mixed");
+    setQuestion(next);
     setAnswer("");
     setState("idle");
     setShowHint(false);
     setShowSolution(false);
+  };
+
+  const selectUnit = (nextUnit: string) => {
+    setUnitId(nextUnit);
+    resetQuestion(nextUnit, mode);
+  };
+
+  const selectMode = (nextMode: "mixed" | "word") => {
+    setMode(nextMode);
+    resetQuestion(unitId, nextMode);
   };
 
   const check = () => {
@@ -1071,14 +1081,25 @@ function Practice({
   return (
     <>
       <PageHead
-        eyebrow={lang === "pl" ? "TRENING" : "PRACTICE ENGINE"}
+        eyebrow={lang === "pl" ? "TRENING • NEW: ZADANIA OPISOWE" : "PRACTICE • NEW: WORD PROBLEMS"}
         title={tr.tasksTitle}
         text={
           lang === "pl"
-            ? "Każde losowanie daje inny wariant. Uczysz się metody rozwiązania, a nie jednej odpowiedzi."
-            : "Every draw creates a new variant, so you learn the method rather than memorising an answer."
+            ? "Oddzielny generator do swobodnego treningu. Mieszaj krótkie obliczenia, zadania ABCD i nowe zadania opisowe."
+            : "A standalone generator for free practice. Mix short calculations, multiple-choice and new word problems."
         }
       />
+
+      <div className="practice-mode-tabs" role="group" aria-label={lang === "pl" ? "Tryb zadań" : "Problem mode"}>
+        <button className={mode === "mixed" ? "active" : ""} onClick={() => selectMode("mixed")}>
+          <RefreshCcw size={18} />
+          {lang === "pl" ? "Mix zadań" : "Mixed practice"}
+        </button>
+        <button className={mode === "word" ? "active" : ""} onClick={() => selectMode("word")}>
+          <BookOpen size={18} />
+          {lang === "pl" ? "Zadania opisowe" : "Word problems"} <em>NEW</em>
+        </button>
+      </div>
 
       <div className="practice-grid">
         <aside className="panel topic-list">
@@ -1086,7 +1107,7 @@ function Practice({
             <button
               key={unit.id}
               className={unitId === unit.id ? "active" : ""}
-              onClick={() => setUnitId(unit.id)}
+              onClick={() => selectUnit(unit.id)}
             >
               <span>{unit.icon}</span>{unit.title[lang]}
             </button>
@@ -1095,98 +1116,101 @@ function Practice({
 
         <div className="practice-workspace">
           <section className="panel problem">
-          <div className="problem-meta"><span>{difficulty}</span></div>
-          <MathProblem question={question} />
-
-          <div className="answer-box">
-            <label>{lang === "pl" ? "Twoja odpowiedź" : "Your answer"}</label>
-            <div>
-              <div className="answer-input-wrap">
-                <input
-                  value={answer}
-                  onChange={(event) => setAnswer(event.target.value)}
-                  onKeyDown={(event) => event.key === "Enter" && check()}
-                  inputMode="decimal"
-                  placeholder="="
-                  aria-label={lang === "pl" ? "Twoja odpowiedź" : "Your answer"}
-                />
-                {question.answerSuffix && <span>{question.answerSuffix}</span>}
-              </div>
-              <button className="primary" onClick={check}>{tr.check}</button>
+            <div className="problem-meta">
+              <span>{difficulty}</span>
+              <span className="problem-points">{question.points} pkt</span>
             </div>
-          </div>
+            <MathProblem question={question} />
 
-          {state !== "idle" && (
-            <div
-              className={state === "correct" ? "feedback good" : "feedback bad"}
-              role="status"
-              aria-live="polite"
-            >
-              {state === "correct" ? <CheckCircle2 /> : <Lightbulb />}
-              <b>{state === "correct" ? tr.correct : tr.wrong}</b>
-            </div>
-          )}
-
-          <div className="problem-actions">
-            <button
-              className="hint-action"
-              aria-expanded={showHint}
-              aria-controls="practice-hint"
-              onClick={() => setShowHint((value) => !value)}
-            >
-              <Lightbulb size={17} /> {tr.hint}
-            </button>
-            <button
-              className="solution-action"
-              aria-expanded={showSolution}
-              aria-controls="practice-solution"
-              onClick={() => setShowSolution((value) => !value)}
-            >
-              <BookOpen size={17} /> {tr.solution}
-            </button>
-            <button className="randomize-action" onClick={randomise}>
-              <RefreshCcw size={17} /> {tr.newVariant}
-            </button>
-          </div>
-
-          <div className="reveal-slot">
-            {showHint && (
-              <div className="reveal hint-reveal" id="practice-hint">
-                <Lightbulb size={17} />
+            <div className="answer-box">
+              <label>{lang === "pl" ? "Twoja odpowiedź" : "Your answer"}</label>
+              {question.kind === "mcq" && question.options ? (
+                <>
+                  <div className="mcq-options">
+                    {question.options.map((option) => (
+                      <button
+                        key={option.id}
+                        className={answer === String(option.value) ? "selected" : ""}
+                        onClick={() => setAnswer(String(option.value))}
+                      >
+                        <b>{option.id}</b>
+                        <span>{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button className="primary check-mcq" onClick={check}>{tr.check}</button>
+                </>
+              ) : (
                 <div>
-                  <span>{question.hint}</span>
-                  {question.hintMath && <MathFormula tex={question.hintMath} display />}
+                  <div className="answer-input-wrap">
+                    <input
+                      value={answer}
+                      onChange={(event) => setAnswer(event.target.value)}
+                      onKeyDown={(event) => event.key === "Enter" && check()}
+                      inputMode="decimal"
+                      placeholder="="
+                      aria-label={lang === "pl" ? "Twoja odpowiedź" : "Your answer"}
+                    />
+                    {question.answerSuffix && <span>{question.answerSuffix}</span>}
+                  </div>
+                  <button className="primary" onClick={check}>{tr.check}</button>
                 </div>
+              )}
+            </div>
+
+            {state !== "idle" && (
+              <div
+                className={state === "correct" ? "feedback good" : "feedback bad"}
+                role="status"
+                aria-live="polite"
+              >
+                {state === "correct" ? <CheckCircle2 /> : <Lightbulb />}
+                <b>{state === "correct" ? tr.correct : tr.wrong}</b>
               </div>
             )}
-            {showSolution && (
-              <div className="reveal solution" id="practice-solution">
-                <Sigma size={17} />
-                <div>
-                  <span>{question.solution}</span>
-                  {question.solutionMath && (
-                    <MathFormula tex={question.solutionMath} display />
-                  )}
+
+            <div className="problem-actions">
+              <button className="hint-action" aria-expanded={showHint} aria-controls="practice-hint" onClick={() => setShowHint((value) => !value)}>
+                <Lightbulb size={19} /> {tr.hint}
+              </button>
+              <button className="solution-action" aria-expanded={showSolution} aria-controls="practice-solution" onClick={() => setShowSolution((value) => !value)}>
+                <BookOpen size={19} /> {tr.solution}
+              </button>
+              <button className="randomize-action" onClick={() => resetQuestion()}>
+                <RefreshCcw size={19} /> {tr.newVariant}
+              </button>
+            </div>
+
+            <div className="reveal-slot">
+              {showHint && (
+                <div className="reveal hint-reveal" id="practice-hint">
+                  <Lightbulb size={20} />
+                  <div>
+                    <span>{question.hint}</span>
+                    {question.hintMath && <MathFormula tex={question.hintMath} display />}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+              {showSolution && (
+                <div className="reveal solution" id="practice-solution">
+                  <Sigma size={20} />
+                  <div>
+                    <span>{question.solution}</span>
+                    {question.solutionMath && <MathFormula tex={question.solutionMath} display />}
+                  </div>
+                </div>
+              )}
+            </div>
           </section>
 
-          <aside
-            className="panel practice-context"
-            aria-label={lang === "pl" ? "Teoria do bieżącego zadania" : "Theory for the current problem"}
-          >
+          <aside className="panel practice-context" aria-label={lang === "pl" ? "Teoria do bieżącego zadania" : "Theory for the current problem"}>
             <div className="context-heading">
-              <span className={"unit-badge " + selectedUnit.accent}>
-                {selectedUnit.icon}
-              </span>
+              <span className={"unit-badge " + selectedUnit.accent}>{selectedUnit.icon}</span>
               <div>
-                <small>{lang === "pl" ? "NAUKA + PRAKTYKA" : "LEARN + PRACTISE"}</small>
+                <small>{lang === "pl" ? "SZYBKA ŚCIĄGA" : "QUICK REFERENCE"}</small>
                 <h2>{selectedUnit.title[lang]}</h2>
               </div>
             </div>
-
             <section className="context-section context-theory">
               <span>{lang === "pl" ? "W pigułce" : "In a nutshell"}</span>
               <p>{selectedUnit.short[lang]}</p>
@@ -1196,25 +1220,21 @@ function Practice({
                 </div>
               )}
             </section>
-
             <section className="context-section context-tip">
-              <span><Lightbulb size={18} /> {lang === "pl" ? "Wskazówka" : "Tip"}</span>
+              <span><Lightbulb size={20} /> {lang === "pl" ? "Wskazówka" : "Tip"}</span>
               <p>{context.tip[lang]}</p>
             </section>
-
             <section className="context-section context-curiosity">
-              <span><Sparkles size={18} /> {lang === "pl" ? "Ciekawostka" : "Did you know?"}</span>
+              <span><Sparkles size={20} /> {lang === "pl" ? "Ciekawostka" : "Did you know?"}</span>
               <p>{context.curiosity[lang]}</p>
             </section>
-
             <section className="context-section context-trap">
-              <span><Target size={18} /> {lang === "pl" ? "Typowy błąd" : "Common mistake"}</span>
+              <span><Target size={20} /> {lang === "pl" ? "Typowy błąd" : "Common mistake"}</span>
               <p>{context.trap[lang]}</p>
             </section>
-
             <button className="context-knowledge-button" onClick={onOpenKnowledge}>
-              <BookOpen size={18} />
-              {lang === "pl" ? "Otwórz pełną bazę wiedzy" : "Open the full knowledge base"}
+              <BookOpen size={19} />
+              {lang === "pl" ? "Otwórz bazę wiedzy" : "Open knowledge base"}
             </button>
           </aside>
         </div>
