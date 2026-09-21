@@ -15,6 +15,7 @@ import {
   BrainCircuit,
   Calculator,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   CircleUserRound,
   Clock3,
@@ -22,6 +23,7 @@ import {
   FlaskConical,
   Languages,
   Lightbulb,
+  Lock,
   Moon,
   Play,
   RefreshCcw,
@@ -38,6 +40,7 @@ import { curriculum, formulas } from "@/content/curriculum";
 import {
   generateQuestion,
   generateSet,
+  generateWordQuestion,
   type GeneratedQuestion,
 } from "@/content/questions";
 import { copy, type Language } from "@/lib/i18n";
@@ -208,7 +211,7 @@ export function MathApp() {
             >
               {item.icon}
               <span>{item.label}</span>
-              {item.id === "exam" && <em>NEW</em>}
+              {(["tasks", "tests", "exam"] as View[]).includes(item.id) && <em>NEW</em>}
             </button>
           ))}
         </nav>
@@ -260,7 +263,6 @@ export function MathApp() {
               lang={lang}
               completed={progress.completedLessons}
               markLesson={markLesson}
-              setView={setView}
             />
           )}
           {view === "knowledge" && <Knowledge lang={lang} />}
@@ -503,40 +505,89 @@ function Stat({
   );
 }
 
+function getLessonVariables(lessonId: string, lang: Language) {
+  const pl = lang === "pl";
+  const map: Record<string, Array<[string, string]>> = {
+    percentages: [
+      ["K₀", pl ? "wartość początkowa" : "initial value"],
+      ["p", pl ? "zmiana procentowa zapisana jako ułamek" : "percentage change as a decimal"],
+      ["n", pl ? "liczba okresów" : "number of periods"],
+      ["Kₙ", pl ? "wartość po n okresach" : "value after n periods"],
+    ],
+    "quadratic-equations": [
+      ["a, b, c", pl ? "współczynniki równania kwadratowego" : "quadratic coefficients"],
+      ["Δ", pl ? "wyróżnik: b² − 4ac" : "discriminant: b² − 4ac"],
+      ["x₁, x₂", pl ? "pierwiastki równania" : "equation roots"],
+    ],
+    "linear-function": [
+      ["a", pl ? "współczynnik kierunkowy" : "slope"],
+      ["b", pl ? "punkt przecięcia z osią Y" : "y-intercept"],
+      ["x", pl ? "argument funkcji" : "function input"],
+    ],
+    "quadratic-function": [
+      ["a", pl ? "kierunek i szerokość paraboli" : "opening and width"],
+      ["p", pl ? "współrzędna x wierzchołka" : "vertex x-coordinate"],
+      ["q", pl ? "współrzędna y wierzchołka" : "vertex y-coordinate"],
+    ],
+    "arithmetic-sequence": [
+      ["a₁", pl ? "pierwszy wyraz ciągu" : "first term"],
+      ["r", pl ? "różnica ciągu" : "common difference"],
+      ["n", pl ? "numer wyrazu" : "term number"],
+    ],
+    "classical-probability": [
+      ["|A|", pl ? "liczba wyników sprzyjających" : "favourable outcomes"],
+      ["|Ω|", pl ? "liczba wszystkich możliwych wyników" : "all possible outcomes"],
+    ],
+  };
+  return map[lessonId] ?? [
+    ["x", pl ? "niewiadoma lub argument zależny od zadania" : "unknown or input, depending on the problem"],
+    ["dane", pl ? "wartości podane w treści zadania" : "values given in the problem"],
+  ];
+}
+
 function Path({
   lang,
   completed,
   markLesson,
-  setView,
 }: {
   lang: Language;
   completed: string[];
   markLesson: (id: string) => void;
-  setView: (view: View) => void;
 }) {
   const tr = copy[lang];
   const [selected, setSelected] = useState({
     unitId: curriculum[0].id,
     lessonId: curriculum[0].lessons[0].id,
   });
+  const [lessonOpen, setLessonOpen] = useState(false);
 
   const selectedUnit =
     curriculum.find((unit) => unit.id === selected.unitId) ?? curriculum[0];
   const selectedLesson =
     selectedUnit.lessons.find((lesson) => lesson.id === selected.lessonId) ??
     selectedUnit.lessons[0];
+  const doneInUnit = selectedUnit.lessons.filter((lesson) =>
+    completed.includes(lesson.id),
+  ).length;
+  const unitProgress = Math.round((doneInUnit / selectedUnit.lessons.length) * 100);
+  const previewQuestion = generateQuestion(selected.unitId, lang, 20260921, "quick");
+  const wordQuestion = generateWordQuestion(selected.unitId, lang, 20260922);
 
-  const previewQuestion = useMemo(
-    () => generateQuestion(selected.unitId, lang, 20260921),
-    [selected.unitId, lang],
-  );
+  const selectLesson = (unitId: string, lessonId: string) => {
+    setSelected({ unitId, lessonId });
+    setLessonOpen(false);
+  };
 
   return (
     <>
       <PageHead
         eyebrow={lang === "pl" ? "PROGRAM" : "CURRICULUM"}
         title={tr.curriculum}
-        text={tr.curriculumSub}
+        text={
+          lang === "pl"
+            ? "Ścieżka to pełne lekcje krok po kroku: teoria, znaczenie symboli, przykłady, zadania podstawowe i część zaawansowana."
+            : "The path contains complete step-by-step lessons: theory, symbol meanings, examples, core practice and advanced material."
+        }
       />
 
       <div className="learning-path-shell">
@@ -553,19 +604,15 @@ function Path({
                 key={unit.id}
               >
                 <div className="unit-title">
-                  <span className={"unit-badge " + unit.accent}>
-                    {unit.roman}
-                  </span>
+                  <span className={"unit-badge " + unit.accent}>{unit.roman}</span>
                   <div>
                     <small>{lang === "pl" ? "MODUŁ" : "UNIT"} {unitIndex + 1}</small>
                     <h2>{unit.title[lang]}</h2>
                     <p>{unit.short[lang]}</p>
                   </div>
                   <div className="unit-progress">
-                    <b>{done}/{unit.lessons.length}</b>
-                    <span>
-                      <i style={{ width: (done / unit.lessons.length) * 100 + "%" }} />
-                    </span>
+                    <b>{Math.round((done / unit.lessons.length) * 100)}%</b>
+                    <span><i style={{ width: (done / unit.lessons.length) * 100 + "%" }} /></span>
                   </div>
                 </div>
 
@@ -575,30 +622,20 @@ function Path({
                     const isSelected =
                       selected.lessonId === lesson.id &&
                       selected.unitId === unit.id;
-
                     return (
                       <button
                         key={lesson.id}
-                        className={[
-                          "lesson",
-                          isDone ? "done" : "",
-                          isSelected ? "selected" : "",
-                        ].join(" ")}
-                        onClick={() =>
-                          setSelected({ unitId: unit.id, lessonId: lesson.id })
-                        }
+                        className={["lesson", isDone ? "done" : "", isSelected ? "selected" : ""].join(" ")}
+                        onClick={() => selectLesson(unit.id, lesson.id)}
                       >
-                        <span>
-                          {isDone ? <CheckCircle2 size={18} /> : <b>{lessonIndex + 1}</b>}
-                        </span>
+                        <span>{isDone ? <CheckCircle2 size={20} /> : <b>{lessonIndex + 1}</b>}</span>
                         <div>
                           <b>{lesson.title[lang]}</b>
                           <small>{lesson.summary[lang]}</small>
                         </div>
                         <em>
                           {lesson.level === "basic" ? tr.basic : tr.extended}
-                          {" • "}
-                          {lesson.minutes} min
+                          {" • "}{lesson.minutes} min
                         </em>
                       </button>
                     );
@@ -611,23 +648,30 @@ function Path({
 
         <aside className="lesson-preview panel">
           <div className="preview-top">
-            <span className={"unit-badge " + selectedUnit.accent}>
-              {selectedUnit.icon}
-            </span>
+            <span className={"unit-badge preview-icon " + selectedUnit.accent}>{selectedUnit.icon}</span>
             <div>
               <small>{lang === "pl" ? "PODGLĄD LEKCJI" : "LESSON PREVIEW"}</small>
               <h2>{selectedLesson.title[lang]}</h2>
             </div>
           </div>
 
+          <div className="lesson-progress-card">
+            <div>
+              <span>{lang === "pl" ? "Postęp działu" : "Unit progress"}</span>
+              <b>{unitProgress}%</b>
+            </div>
+            <div className="lesson-progress-track"><i style={{ width: unitProgress + "%" }} /></div>
+            <small>{doneInUnit}/{selectedUnit.lessons.length} {lang === "pl" ? "lekcji ukończonych" : "lessons completed"}</small>
+          </div>
+
           <p>{selectedLesson.summary[lang]}</p>
 
           <div className="preview-block">
-            <span>{lang === "pl" ? "Co przećwiczysz" : "What you'll practise"}</span>
+            <span>{lang === "pl" ? "W tej lekcji" : "In this lesson"}</span>
             <ul>
-              <li>{lang === "pl" ? "rozpoznawanie typu zadania i dobór metody" : "identifying the problem type and choosing a method"}</li>
-              <li>{lang === "pl" ? "czytelny zapis kolejnych kroków rozwiązania" : "writing clear step-by-step solutions"}</li>
-              <li>{lang === "pl" ? "unikanie typowych błędów rachunkowych" : "avoiding common calculation mistakes"}</li>
+              <li>{lang === "pl" ? "zrozumiesz skąd bierze się wzór i kiedy go używać" : "understand where the formula comes from and when to use it"}</li>
+              <li>{lang === "pl" ? "przejdziesz przez przykład krok po kroku" : "walk through an example step by step"}</li>
+              <li>{lang === "pl" ? "rozwiążesz zadanie krótkie i opisowe" : "solve a short and a word problem"}</li>
             </ul>
           </div>
 
@@ -638,61 +682,186 @@ function Path({
             </div>
           )}
 
-          <div className="preview-example">
-            <span>{lang === "pl" ? "Przykład z modułu" : "Module example"}</span>
-            <MathProblem question={previewQuestion} compact />
-          </div>
-
-          <div className="preview-actions">
+          <div className="preview-actions preview-actions-strong">
+            <button className="lesson-start-button" onClick={() => setLessonOpen(true)}>
+              <Play size={18} fill="currentColor" />
+              {lang === "pl" ? "Rozpocznij lekcję krok po kroku" : "Start step-by-step lesson"}
+            </button>
             <button
-              className="primary"
+              className="lesson-complete-button"
               onClick={() => markLesson(selectedLesson.id)}
               disabled={completed.includes(selectedLesson.id)}
             >
-              <CheckCircle2 size={16} />
+              <CheckCircle2 size={18} />
               {completed.includes(selectedLesson.id) ? tr.done : tr.markDone}
-            </button>
-            <button className="secondary" onClick={() => setView("tasks")}>
-              <Calculator size={16} />
-              {lang === "pl" ? "Ćwicz ten dział" : "Practise this unit"}
             </button>
           </div>
         </aside>
       </div>
+
+      {lessonOpen && (
+        <section className="lesson-room panel" aria-label={selectedLesson.title[lang]}>
+          <header className="lesson-room-header">
+            <div>
+              <span className="eyebrow">{lang === "pl" ? "LEKCJA INTERAKTYWNA" : "INTERACTIVE LESSON"}</span>
+              <h2>{selectedLesson.title[lang]}</h2>
+              <p>{selectedLesson.summary[lang]}</p>
+            </div>
+            <button className="ghost" onClick={() => setLessonOpen(false)}>
+              {lang === "pl" ? "Zamknij" : "Close"} ×
+            </button>
+          </header>
+
+          <div className="lesson-room-grid">
+            <article className="lesson-step">
+              <span className="lesson-step-number">1</span>
+              <div>
+                <small>{lang === "pl" ? "ZROZUM IDEĘ" : "UNDERSTAND THE IDEA"}</small>
+                <h3>{selectedUnit.title[lang]}</h3>
+                <p>
+                  {selectedUnit.short[lang]}{" "}
+                  {lang === "pl"
+                    ? "Najpierw rozpoznaj, jakie dane masz w zadaniu i czego dokładnie szukasz. Dopiero potem wybieraj wzór."
+                    : "First identify the known values and what you need to find. Only then choose a formula."}
+                </p>
+              </div>
+            </article>
+
+            <article className="lesson-step">
+              <span className="lesson-step-number">2</span>
+              <div>
+                <small>{lang === "pl" ? "ROZBIERZ WZÓR" : "BREAK DOWN THE FORMULA"}</small>
+                <h3>{lang === "pl" ? "Co oznacza każdy symbol?" : "What does each symbol mean?"}</h3>
+                {lessonFormulaTex[selectedLesson.id] ? (
+                  <>
+                    <div className="lesson-main-formula"><MathFormula tex={lessonFormulaTex[selectedLesson.id]} display /></div>
+                    <div className="variable-grid">
+                      {getLessonVariables(selectedLesson.id, lang).map(([symbol, meaning]) => (
+                        <div key={symbol}><b>{symbol}</b><span>{meaning}</span></div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p>{lang === "pl" ? "W tej lekcji nacisk jest na metodę i kolejność działań, nie na jeden wzór." : "This lesson focuses on method and order of operations rather than a single formula."}</p>
+                )}
+              </div>
+            </article>
+
+            <article className="lesson-step lesson-step-wide">
+              <span className="lesson-step-number">3</span>
+              <div>
+                <small>{lang === "pl" ? "PRZYKŁAD KROK PO KROKU" : "STEP-BY-STEP EXAMPLE"}</small>
+                <MathProblem question={previewQuestion} />
+                <ol className="worked-steps">
+                  <li>{lang === "pl" ? "Zapisz dane i określ niewiadomą." : "Write down the known values and the unknown."}</li>
+                  <li>{lang === "pl" ? "Wybierz regułę lub wzór pasujący do typu zadania." : "Choose the rule or formula that matches the problem type."}</li>
+                  <li>{lang === "pl" ? "Podstaw wartości, policz i sprawdź sens wyniku." : "Substitute, calculate and check whether the result makes sense."}</li>
+                </ol>
+                <div className="worked-answer">
+                  <span>{previewQuestion.solution}</span>
+                  {previewQuestion.solutionMath && <MathFormula tex={previewQuestion.solutionMath} display />}
+                </div>
+              </div>
+            </article>
+
+            <article className="lesson-step lesson-practice-card">
+              <span className="lesson-step-number">4</span>
+              <div>
+                <small>{lang === "pl" ? "ZADANIE PODSTAWOWE" : "CORE PRACTICE"}</small>
+                <MathProblem question={wordQuestion} compact />
+                <span className="level-chip">{lang === "pl" ? "PODSTAWA" : "CORE"}</span>
+              </div>
+            </article>
+
+            <article className="lesson-step lesson-pro-card">
+              <span className="lesson-step-number"><Lock size={16} /></span>
+              <div>
+                <small>{lang === "pl" ? "ROZSZERZENIE PRO" : "ADVANCED PRO"}</small>
+                <h3>{lang === "pl" ? "Zadania wieloetapowe i maturalne" : "Multi-step and exam-style problems"}</h3>
+                <p>{lang === "pl" ? "Dłuższe zadania opisowe, łączenie kilku metod, trudniejsze warianty i pełne rozwiązania krok po kroku." : "Longer word problems, multiple methods, harder variants and complete step-by-step solutions."}</p>
+                <span className="pro-chip">PRO</span>
+              </div>
+            </article>
+          </div>
+        </section>
+      )}
     </>
   );
 }
 
 function Knowledge({ lang }: { lang: Language }) {
   const tr = copy[lang];
+  const [selectedUnitId, setSelectedUnitId] = useState(curriculum[0].id);
+  const selectedUnit =
+    curriculum.find((unit) => unit.id === selectedUnitId) ?? curriculum[0];
+
   return (
     <>
       <PageHead
         eyebrow={lang === "pl" ? "BIBLIOTEKA" : "KNOWLEDGE BASE"}
         title={tr.knowledgeTitle}
-        text={tr.knowledgeSub}
+        text={
+          lang === "pl"
+            ? "Szybka ściąga do przypomnienia teorii: definicje, wzory, znaczenie symboli i typowe zastosowania. Pełne prowadzenie krok po kroku zostaje w Ścieżce."
+            : "A fast reference for definitions, formulas, symbol meanings and typical uses. Full step-by-step teaching stays in the Learning Path."
+        }
       />
-      <div className="knowledge-grid">
-        {curriculum.map((unit) => (
-          <article className="panel knowledge-card" key={unit.id}>
-            <span className={"unit-badge " + unit.accent}>{unit.icon}</span>
-            <h2>{unit.title[lang]}</h2>
-            <p>{unit.short[lang]}</p>
+
+      <div className="knowledge-shell">
+        <aside className="panel knowledge-nav">
+          {curriculum.map((unit) => (
+            <button
+              key={unit.id}
+              className={selectedUnit.id === unit.id ? "active" : ""}
+              onClick={() => setSelectedUnitId(unit.id)}
+            >
+              <span className={"knowledge-nav-icon " + unit.accent}>{unit.icon}</span>
+              <div><b>{unit.title[lang]}</b><small>{unit.lessons.length} {lang === "pl" ? "tematów" : "topics"}</small></div>
+              <ChevronRight size={18} />
+            </button>
+          ))}
+        </aside>
+
+        <article className="panel knowledge-detail">
+          <header className="knowledge-detail-header">
+            <span className={"knowledge-hero-icon " + selectedUnit.accent}>{selectedUnit.icon}</span>
             <div>
-              {unit.lessons.map((lesson) => (
-                <section key={lesson.id}>
-                  <b>{lesson.title[lang]}</b>
-                  <small>{lesson.summary[lang]}</small>
-                  {lessonFormulaTex[lesson.id] && (
-                    <div className="knowledge-formula">
-                      <MathFormula tex={lessonFormulaTex[lesson.id]} />
-                    </div>
-                  )}
-                </section>
-              ))}
+              <small>{lang === "pl" ? "SZYBKA POWTÓRKA" : "QUICK REFERENCE"}</small>
+              <h2>{selectedUnit.title[lang]}</h2>
+              <p>{selectedUnit.short[lang]}</p>
             </div>
-          </article>
-        ))}
+          </header>
+
+          <div className="knowledge-callout">
+            <Lightbulb size={20} />
+            <div>
+              <b>{lang === "pl" ? "Jak korzystać z tej sekcji?" : "How to use this section"}</b>
+              <span>{lang === "pl" ? "Przypomnij sobie definicję i wzór. Pełne wyjaśnienie z ćwiczeniami krok po kroku znajdziesz w Ścieżce." : "Recall the definition and formula. Full guided explanations live in the Learning Path."}</span>
+            </div>
+          </div>
+
+          <div className="knowledge-topic-list">
+            {selectedUnit.lessons.map((lesson, index) => (
+              <section key={lesson.id} className="knowledge-topic-row">
+                <span className="knowledge-topic-number">{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <div className="knowledge-topic-title">
+                    <h3>{lesson.title[lang]}</h3>
+                    <span>{lesson.level === "basic" ? tr.basic : tr.extended}</span>
+                  </div>
+                  <p>{lesson.summary[lang]}</p>
+                  {lessonFormulaTex[lesson.id] && (
+                    <div className="knowledge-formula-large"><MathFormula tex={lessonFormulaTex[lesson.id]} display /></div>
+                  )}
+                  <div className="knowledge-mini-explanation">
+                    <b>{lang === "pl" ? "Zapamiętaj:" : "Remember:"}</b>
+                    <span>{lang === "pl" ? "Zwróć uwagę na znaczenie symboli i warunki zastosowania wzoru." : "Pay attention to symbol meanings and when the formula can be used."}</span>
+                  </div>
+                </div>
+              </section>
+            ))}
+          </div>
+        </article>
       </div>
       <p className="source-note">{tr.sourceNote}</p>
     </>
