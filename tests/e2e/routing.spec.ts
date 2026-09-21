@@ -123,7 +123,7 @@ test("lesson exercise exposes separate yellow hint and red answer reveals", asyn
     .getByRole("button", { name: /Rozpocznij lekcję krok po kroku/i })
     .click();
 
-  await page.getByRole("button", { name: "Ćwiczenie", exact: true }).click();
+  await page.getByRole("button", { name: /Ćwiczenie/i }).click();
 
   const hintButton = page.getByRole("button", { name: /Pokaż podpowiedź/i });
   const answerButton = page.getByRole("button", { name: /Pokaż odpowiedź/i });
