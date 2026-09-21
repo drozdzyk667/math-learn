@@ -83,6 +83,7 @@ export function LessonExperience({
   const [progress, setProgress] = useState<Progress>(fallbackProgress);
   const [step, setStep] = useState(0);
   const [awardedSteps, setAwardedSteps] = useState<number[]>([]);
+  const [rewardedTaskIds, setRewardedTaskIds] = useState<string[]>([]);
   const [example, setExample] = useState<GeneratedQuestion | null>(null);
   const [basicTask, setBasicTask] = useState<GeneratedQuestion | null>(null);
   const [reasoningTask, setReasoningTask] = useState<GeneratedQuestion | null>(null);
@@ -92,14 +93,24 @@ export function LessonExperience({
   const [showAnswer, setShowAnswer] = useState(false);
   const [celebration, setCelebration] = useState(0);
   const [celebrationMessage, setCelebrationMessage] = useState("");
+  const [celebrationFireworks, setCelebrationFireworks] = useState(false);
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       setProgress(readProgress());
       if (!data) return;
+
+      const rewardKey = `mathly-lesson-rewards:${data.lesson.id}`;
+      try {
+        const rewarded = localStorage.getItem(rewardKey);
+        setRewardedTaskIds(rewarded ? (JSON.parse(rewarded) as string[]) : []);
+      } catch {
+        setRewardedTaskIds([]);
+      }
+
       setExample(generateQuestion(data.unit.id, lang, 1101, "quick"));
-      setBasicTask(generateWordQuestion(data.unit.id, lang, 2202));
+      setBasicTask(generateReasoningQuestion(data.unit.id, lang, 2202));
       setReasoningTask(generateReasoningQuestion(data.unit.id, lang, 3303));
     });
     return () => window.cancelAnimationFrame(frame);
@@ -122,8 +133,9 @@ export function LessonExperience({
     lang === "pl" ? "Myślenie" : "Reasoning",
   ];
 
-  const triggerCelebration = (message: string) => {
+  const triggerCelebration = (message: string, fireworks = false) => {
     setCelebrationMessage(message);
+    setCelebrationFireworks(fireworks);
     setCelebration((value) => value + 1);
   };
 
@@ -135,7 +147,10 @@ export function LessonExperience({
       saveProgress(next);
       return next;
     });
-    triggerCelebration(lang === "pl" ? "+20 XP za etap" : "+20 XP for this step");
+    triggerCelebration(
+      lang === "pl" ? "+20 XP za ukończenie etapu" : "+20 XP for completing this step",
+      false,
+    );
   };
 
   const selectStep = (nextStep: number, scroll = false) => {
@@ -164,20 +179,44 @@ export function LessonExperience({
       Math.abs(parsed - activeTask.answer) < 0.011;
     setFeedback(correct ? "correct" : "wrong");
 
+    const alreadyRewarded = rewardedTaskIds.includes(activeTask.id);
+
+    if (!correct) {
+      setProgress((previous) => {
+        const next = {
+          ...previous,
+          answered: previous.answered + 1,
+        };
+        saveProgress(next);
+        return next;
+      });
+      return;
+    }
+
+    if (alreadyRewarded) return;
+
+    const nextRewarded = [...rewardedTaskIds, activeTask.id];
+    setRewardedTaskIds(nextRewarded);
+    localStorage.setItem(
+      `mathly-lesson-rewards:${lesson.id}`,
+      JSON.stringify(nextRewarded),
+    );
+
     setProgress((previous) => {
       const next = {
         ...previous,
         answered: previous.answered + 1,
-        correct: previous.correct + (correct ? 1 : 0),
-        xp: previous.xp + (correct ? 35 : 0),
+        correct: previous.correct + 1,
+        xp: previous.xp + 35,
       };
       saveProgress(next);
       return next;
     });
 
-    if (correct) {
-      triggerCelebration(lang === "pl" ? "Świetnie! +35 XP" : "Great! +35 XP");
-    }
+    triggerCelebration(
+      lang === "pl" ? "Świetnie! +35 XP" : "Great! +35 XP",
+      true,
+    );
   };
 
   const completeLesson = () => {
@@ -203,6 +242,7 @@ export function LessonExperience({
         : lang === "pl"
           ? "Lekcja ukończona! +100 XP"
           : "Lesson complete! +100 XP",
+      false,
     );
   };
 
@@ -216,6 +256,7 @@ export function LessonExperience({
         key={celebration}
         active={celebration > 0}
         message={celebrationMessage}
+        fireworks={celebrationFireworks}
       />
 
       <header className="lesson-experience-header">
