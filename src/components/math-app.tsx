@@ -5,6 +5,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import {
@@ -30,6 +31,8 @@ import {
   Target,
   Trophy,
   Zap,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { curriculum, formulas } from "@/content/curriculum";
 import {
@@ -180,6 +183,9 @@ export function MathApp() {
 
   return (
     <div className="app">
+      <a className="skip-link" href="#main-content">
+        {lang === "pl" ? "Przejdź do treści" : "Skip to content"}
+      </a>
       <aside className="sidebar">
         <button className="brand" onClick={() => setView("home")}>
           <Logo />
@@ -194,6 +200,7 @@ export function MathApp() {
             <button
               key={item.id}
               className={view === item.id ? "nav active" : "nav"}
+              aria-current={view === item.id ? "page" : undefined}
               onClick={() => setView(item.id)}
             >
               {item.icon}
@@ -226,7 +233,7 @@ export function MathApp() {
         </div>
       </aside>
 
-      <main className="main">
+      <main className="main" id="main-content" tabIndex={-1}>
         <header className="topbar">
           <div className="top-pills">
             <span><Flame size={16} /> {progress.streak}</span>
@@ -258,6 +265,7 @@ export function MathApp() {
           {view === "tasks" && (
             <Practice
               lang={lang}
+              onOpenKnowledge={() => setView("knowledge")}
               onResult={(ok) =>
                 setProgress((p) => ({
                   ...p,
@@ -269,7 +277,10 @@ export function MathApp() {
             />
           )}
           {view === "lab" && (
-            <FunctionLab labels={{ title: tr.labTitle, sub: tr.labSub }} />
+            <FunctionLab
+              labels={{ title: tr.labTitle, sub: tr.labSub }}
+              language={lang}
+            />
           )}
           {view === "tests" && (
             <Tests
@@ -751,11 +762,88 @@ function MathProblem({
   );
 }
 
+const practiceContext: Record<
+  string,
+  {
+    tip: Record<Language, string>;
+    curiosity: Record<Language, string>;
+    trap: Record<Language, string>;
+  }
+> = {
+  "real-numbers": {
+    tip: { pl: "Najpierw sprowadź potęgi do tej samej podstawy, dopiero potem licz.", en: "Bring powers to the same base before calculating." },
+    curiosity: { pl: "Logarytmy zamieniają mnożenie w dodawanie — dlatego przez stulecia przyspieszały obliczenia astronomiczne.", en: "Logarithms turn multiplication into addition, which is why they once sped up astronomical calculations." },
+    trap: { pl: "Nie dodawaj wykładników przy dodawaniu potęg — ta reguła działa tylko przy mnożeniu.", en: "Do not add exponents when adding powers; that rule only applies to multiplication." },
+  },
+  algebra: {
+    tip: { pl: "Szukaj wspólnego czynnika i wzorów skróconego mnożenia zanim zaczniesz rozwijać wszystko po kolei.", en: "Look for a common factor or an identity before expanding everything." },
+    curiosity: { pl: "Symboliczna algebra pozwala jednym wzorem opisać nieskończenie wiele konkretnych obliczeń.", en: "Symbolic algebra lets one formula describe infinitely many concrete calculations." },
+    trap: { pl: "W (a+b)² najczęściej gubi się środkowy składnik 2ab.", en: "The most common mistake in (a+b)² is forgetting the middle term 2ab." },
+  },
+  equations: {
+    tip: { pl: "Po rozwiązaniu równania podstaw wynik z powrotem — szybka kontrola często wychwytuje błąd znaku.", en: "Substitute your result back into the equation to catch sign errors." },
+    curiosity: { pl: "Wyróżnik Δ mówi nie tylko jak liczyć pierwiastki, ale też ile punktów przecięcia z osią X ma parabola.", en: "The discriminant Δ tells you both how to find roots and how many x-axis intersections a parabola has." },
+    trap: { pl: "Przy przenoszeniu wyrazu na drugą stronę pamiętaj o zmianie znaku.", en: "When moving a term across the equals sign, remember to change its sign." },
+  },
+  systems: {
+    tip: { pl: "Wybierz metodę, która najszybciej eliminuje jedną niewiadomą.", en: "Choose the method that eliminates one variable fastest." },
+    curiosity: { pl: "Geometrycznie rozwiązanie układu dwóch równań liniowych to punkt przecięcia dwóch prostych.", en: "Geometrically, solving two linear equations means finding where two lines intersect." },
+    trap: { pl: "Mnożąc całe równanie, pomnóż każdy jego składnik — także wyraz wolny.", en: "When multiplying an equation, multiply every term, including the constant." },
+  },
+  functions: {
+    tip: { pl: "Zawsze zacznij od dziedziny, potem miejsc zerowych i monotoniczności.", en: "Start with the domain, then zeros and monotonicity." },
+    curiosity: { pl: "Ten sam kształt wykresu może opisywać drogę, koszt, temperaturę albo wzrost populacji.", en: "The same graph shape can model distance, cost, temperature or population growth." },
+    trap: { pl: "Nie myl f(x) z iloczynem f·x — to wartość funkcji dla argumentu x.", en: "Do not read f(x) as f times x; it is the value of the function at x." },
+  },
+  sequences: {
+    tip: { pl: "Najpierw rozpoznaj: stała różnica oznacza ciąg arytmetyczny, stały iloraz — geometryczny.", en: "A constant difference means arithmetic; a constant ratio means geometric." },
+    curiosity: { pl: "Ciągi geometryczne pojawiają się m.in. w procencie składanym i modelach wzrostu.", en: "Geometric sequences appear in compound interest and growth models." },
+    trap: { pl: "We wzorze na aₙ występuje n−1, nie n.", en: "The nth-term formula uses n−1, not n." },
+  },
+  trigonometry: {
+    tip: { pl: "Zaznacz przeciwprostokątną i bok naprzeciw wybranego kąta zanim wybierzesz funkcję.", en: "Mark the hypotenuse and the side opposite the angle before choosing a ratio." },
+    curiosity: { pl: "Trygonometria pozwala mierzyć odległości, których nie da się zmierzyć bezpośrednio.", en: "Trigonometry can measure distances that cannot be measured directly." },
+    trap: { pl: "Sprawdź tryb kalkulatora: stopnie i radiany dają zupełnie inne wyniki.", en: "Check the calculator mode: degrees and radians give very different results." },
+  },
+  planimetry: {
+    tip: { pl: "Zanim liczysz, dopisz na rysunku wszystkie znane długości i kąty.", en: "Before calculating, label all known lengths and angles on the diagram." },
+    curiosity: { pl: "Podobieństwo figur jest podstawą skal map, modeli i wielu pomiarów pośrednich.", en: "Similarity underpins map scales, models and many indirect measurements." },
+    trap: { pl: "Przy zmianie skali k pola rosną k² razy, a nie k razy.", en: "If lengths scale by k, areas scale by k², not k." },
+  },
+  "analytic-geometry": {
+    tip: { pl: "Traktuj współrzędne jak dane do wzoru i pilnuj nawiasów przy liczbach ujemnych.", en: "Treat coordinates as formula inputs and use brackets around negative values." },
+    curiosity: { pl: "Geometria analityczna połączyła algebrę z geometrią w jeden język.", en: "Analytic geometry joined algebra and geometry into one language." },
+    trap: { pl: "W odległości punktów obie różnice współrzędnych są podnoszone do kwadratu.", en: "In the distance formula, both coordinate differences are squared." },
+  },
+  stereometry: {
+    tip: { pl: "Narysuj bryłę pomocniczo i zaznacz wysokość prostopadłą do podstawy.", en: "Sketch the solid and mark the height perpendicular to the base." },
+    curiosity: { pl: "Przekrój przestrzennej bryły często zamienia trudne zadanie 3D w zwykłą geometrię 2D.", en: "A cross-section often turns a hard 3D problem into ordinary 2D geometry." },
+    trap: { pl: "Nie myl wysokości ściany bocznej z wysokością całej bryły.", en: "Do not confuse a slant height with the solid's perpendicular height." },
+  },
+  combinatorics: {
+    tip: { pl: "Najpierw odpowiedz: czy kolejność ma znaczenie i czy elementy mogą się powtarzać?", en: "First ask whether order matters and whether repetition is allowed." },
+    curiosity: { pl: "Kombinatoryka stoi za liczeniem możliwości w kryptografii, algorytmach i prawdopodobieństwie.", en: "Combinatorics powers counting in cryptography, algorithms and probability." },
+    trap: { pl: "Kombinacji używamy, gdy kolejność nie ma znaczenia.", en: "Use combinations only when order does not matter." },
+  },
+  probability: {
+    tip: { pl: "Zdefiniuj przestrzeń wszystkich wyników zanim zaczniesz liczyć zdarzenie.", en: "Define the full sample space before counting the event." },
+    curiosity: { pl: "Prawdopodobieństwo 50% nie oznacza, że w dwóch próbach dokładnie raz zajdzie zdarzenie.", en: "A 50% probability does not mean an event must happen exactly once in two trials." },
+    trap: { pl: "Nie zakładaj jednakowego prawdopodobieństwa wyników, jeśli zadanie tego nie gwarantuje.", en: "Do not assume outcomes are equally likely unless the problem guarantees it." },
+  },
+  calculus: {
+    tip: { pl: "W optymalizacji najpierw zapisz wielkość, którą maksymalizujesz lub minimalizujesz jako funkcję jednej zmiennej.", en: "In optimisation, first express the quantity to maximise or minimise as a function of one variable." },
+    curiosity: { pl: "Pochodna opisuje chwilowe tempo zmiany — od prędkości auta po tempo wzrostu kosztu.", en: "A derivative describes an instantaneous rate of change, from vehicle speed to cost growth." },
+    trap: { pl: "Punkt, w którym pochodna jest równa zero, nie zawsze jest ekstremum.", en: "A point where the derivative is zero is not always an extremum." },
+  },
+};
+
 function Practice({
   lang,
+  onOpenKnowledge,
   onResult,
 }: {
   lang: Language;
+  onOpenKnowledge: () => void;
   onResult: (correct: boolean) => void;
 }) {
   const tr = copy[lang];
@@ -798,6 +886,13 @@ function Practice({
         ? lang === "pl" ? "ŚREDNIE" : "MEDIUM"
         : lang === "pl" ? "TRUDNE" : "HARD";
 
+  const selectedUnit =
+    curriculum.find((unit) => unit.id === unitId) ?? curriculum[0];
+  const keyLesson = selectedUnit.lessons.find(
+    (lesson) => Boolean(lessonFormulaTex[lesson.id]),
+  );
+  const context = practiceContext[unitId] ?? practiceContext["real-numbers"];
+
   return (
     <>
       <PageHead
@@ -823,7 +918,8 @@ function Practice({
           ))}
         </aside>
 
-        <section className="panel problem">
+        <div className="practice-workspace">
+          <section className="panel problem">
           <div className="problem-meta"><span>{difficulty}</span></div>
           <MathProblem question={question} />
 
@@ -846,7 +942,11 @@ function Practice({
           </div>
 
           {state !== "idle" && (
-            <div className={state === "correct" ? "feedback good" : "feedback bad"}>
+            <div
+              className={state === "correct" ? "feedback good" : "feedback bad"}
+              role="status"
+              aria-live="polite"
+            >
               {state === "correct" ? <CheckCircle2 /> : <Lightbulb />}
               <b>{state === "correct" ? tr.correct : tr.wrong}</b>
             </div>
@@ -855,12 +955,16 @@ function Practice({
           <div className="problem-actions">
             <button
               className="hint-action"
+              aria-expanded={showHint}
+              aria-controls="practice-hint"
               onClick={() => setShowHint((value) => !value)}
             >
               <Lightbulb size={17} /> {tr.hint}
             </button>
             <button
               className="solution-action"
+              aria-expanded={showSolution}
+              aria-controls="practice-solution"
               onClick={() => setShowSolution((value) => !value)}
             >
               <BookOpen size={17} /> {tr.solution}
@@ -872,7 +976,7 @@ function Practice({
 
           <div className="reveal-slot">
             {showHint && (
-              <div className="reveal hint-reveal">
+              <div className="reveal hint-reveal" id="practice-hint">
                 <Lightbulb size={17} />
                 <div>
                   <span>{question.hint}</span>
@@ -881,7 +985,7 @@ function Practice({
               </div>
             )}
             {showSolution && (
-              <div className="reveal solution">
+              <div className="reveal solution" id="practice-solution">
                 <Sigma size={17} />
                 <div>
                   <span>{question.solution}</span>
@@ -892,7 +996,53 @@ function Practice({
               </div>
             )}
           </div>
-        </section>
+          </section>
+
+          <aside
+            className="panel practice-context"
+            aria-label={lang === "pl" ? "Teoria do bieżącego zadania" : "Theory for the current problem"}
+          >
+            <div className="context-heading">
+              <span className={"unit-badge " + selectedUnit.accent}>
+                {selectedUnit.icon}
+              </span>
+              <div>
+                <small>{lang === "pl" ? "NAUKA + PRAKTYKA" : "LEARN + PRACTISE"}</small>
+                <h2>{selectedUnit.title[lang]}</h2>
+              </div>
+            </div>
+
+            <section className="context-section context-theory">
+              <span>{lang === "pl" ? "W pigułce" : "In a nutshell"}</span>
+              <p>{selectedUnit.short[lang]}</p>
+              {keyLesson && lessonFormulaTex[keyLesson.id] && (
+                <div className="context-formula">
+                  <MathFormula tex={lessonFormulaTex[keyLesson.id]} display />
+                </div>
+              )}
+            </section>
+
+            <section className="context-section context-tip">
+              <span><Lightbulb size={18} /> {lang === "pl" ? "Wskazówka" : "Tip"}</span>
+              <p>{context.tip[lang]}</p>
+            </section>
+
+            <section className="context-section context-curiosity">
+              <span><Sparkles size={18} /> {lang === "pl" ? "Ciekawostka" : "Did you know?"}</span>
+              <p>{context.curiosity[lang]}</p>
+            </section>
+
+            <section className="context-section context-trap">
+              <span><Target size={18} /> {lang === "pl" ? "Typowy błąd" : "Common mistake"}</span>
+              <p>{context.trap[lang]}</p>
+            </section>
+
+            <button className="context-knowledge-button" onClick={onOpenKnowledge}>
+              <BookOpen size={18} />
+              {lang === "pl" ? "Otwórz pełną bazę wiedzy" : "Open the full knowledge base"}
+            </button>
+          </aside>
+        </div>
       </div>
     </>
   );
@@ -1131,6 +1281,10 @@ function Assessment({
 }) {
   const tr = copy[lang];
   const pages = chunkQuestions(questions);
+  const [paperZoom, setPaperZoom] = useState(115);
+  const paperStyle = {
+    "--paper-scale": paperZoom / 100,
+  } as CSSProperties;
 
   return (
     <div className="assessment-screen">
@@ -1146,14 +1300,39 @@ function Assessment({
           </span>
           <b>{title}</b>
         </div>
-        {timer !== undefined ? (
-          <b className="timer">
-            {String(Math.floor(timer / 60)).padStart(2, "0")}:
-            {String(timer % 60).padStart(2, "0")}
-          </b>
-        ) : (
-          <b className="timer">{durationLabel}</b>
-        )}
+        <div className="assessment-right">
+          <div
+            className="zoom-controls"
+            role="group"
+            aria-label={lang === "pl" ? "Powiększenie arkusza" : "Paper zoom"}
+          >
+            <button
+              type="button"
+              onClick={() => setPaperZoom((value) => Math.max(80, value - 10))}
+              disabled={paperZoom <= 80}
+              aria-label={lang === "pl" ? "Pomniejsz arkusz" : "Zoom out"}
+            >
+              <ZoomOut size={20} />
+            </button>
+            <span aria-live="polite">{paperZoom}%</span>
+            <button
+              type="button"
+              onClick={() => setPaperZoom((value) => Math.min(150, value + 10))}
+              disabled={paperZoom >= 150}
+              aria-label={lang === "pl" ? "Powiększ arkusz" : "Zoom in"}
+            >
+              <ZoomIn size={20} />
+            </button>
+          </div>
+          {timer !== undefined ? (
+            <b className="timer">
+              {String(Math.floor(timer / 60)).padStart(2, "0")}:
+              {String(timer % 60).padStart(2, "0")}
+            </b>
+          ) : (
+            <b className="timer">{durationLabel}</b>
+          )}
+        </div>
       </div>
 
       {result !== null && (
@@ -1171,7 +1350,8 @@ function Assessment({
         </div>
       )}
 
-      <div className="paper-stack">
+      <div className="paper-viewport">
+        <div className="paper-stack" style={paperStyle}>
         {pages.map((page, pageIndex) => {
           const firstQuestionIndex = pageIndex * 4;
           return (
@@ -1280,6 +1460,7 @@ function Assessment({
             </section>
           );
         })}
+        </div>
       </div>
 
       {result === null && (
