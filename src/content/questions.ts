@@ -421,6 +421,219 @@ export function generateWordQuestion(
   return baseQuestion(unitId, locale, token);
 }
 
+export function generateReasoningQuestion(
+  unitId: string,
+  locale: Locale,
+  seed = Date.now(),
+): GeneratedQuestion {
+  const token = tokenFor(unitId, seed);
+
+  if (unitId === "real-numbers") {
+    const price = pick([400, 500, 800, 1000]);
+    const increase = pick([10, 20, 25]);
+    const discount = pick([10, 20, 25]);
+    const answer = Number(
+      (price * (1 + increase / 100) * (1 - discount / 100)).toFixed(2),
+    );
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Sklep podniósł cenę roweru kosztującego początkowo ${price} zł o ${increase}%. Tydzień później ogłosił promocję i obniżył nową cenę o ${discount}%. Klient twierdzi, że skoro procent podwyżki i obniżki są podobne, cena prawie wróciła do początkowej. Oblicz końcową cenę roweru i podaj ją w złotych.`,
+        `A shop increased the price of a bicycle originally costing ${price} by ${increase}%. A week later it discounted the new price by ${discount}%. A customer claims the price is almost back to the original because the percentages are similar. Calculate the final price.`,
+      ),
+      math: `K=${price}\\left(1+\\frac{${increase}}{100}\\right)\\left(1-\\frac{${discount}}{100}\\right)`,
+      answer,
+      answerSuffix: locale === "pl" ? " zł" : "",
+      hint: t(
+        locale,
+        "Druga zmiana procentowa dotyczy już zmienionej ceny, a nie ceny początkowej.",
+        "The second percentage change applies to the already changed price, not the original price.",
+      ),
+      solution: t(
+        locale,
+        "Najpierw stosujemy podwyżkę, a dopiero do otrzymanej kwoty obniżkę.",
+        "Apply the increase first, then the discount to the resulting amount.",
+      ),
+      solutionMath: `K=${price}\\cdot${1 + increase / 100}\\cdot${1 - discount / 100}=${answer}`,
+    };
+  }
+
+  if (unitId === "functions") {
+    const startA = 8;
+    const rateA = 3;
+    const startB = 20;
+    const rateB = 2;
+    const distance = pick([8, 10, 12, 15]);
+    const costA = startA + rateA * distance;
+    const costB = startB + rateB * distance;
+    const answer = Math.min(costA, costB);
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Dwie firmy taksówkarskie mają różne cenniki. Firma A pobiera ${startA} zł opłaty początkowej i ${rateA} zł za kilometr. Firma B pobiera ${startB} zł na start i ${rateB} zł za kilometr. Planujesz przejazd długości ${distance} km. Oblicz koszt w obu firmach i podaj niższą cenę kursu.`,
+        `Two taxi companies use different tariffs. Company A charges ${startA} initially and ${rateA} per kilometre. Company B charges ${startB} initially and ${rateB} per kilometre. You plan a ${distance} km trip. Calculate both costs and give the cheaper price.`,
+      ),
+      math: `A(x)=${rateA}x+${startA},\\qquad B(x)=${rateB}x+${startB}`,
+      answer,
+      answerSuffix: locale === "pl" ? " zł" : "",
+      hint: t(
+        locale,
+        "Policz wartości obu funkcji dla tej samej długości trasy i dopiero potem je porównaj.",
+        "Evaluate both functions for the same distance, then compare them.",
+      ),
+      solution: t(locale, "Porównujemy oba koszty:", "Compare both costs:"),
+      solutionMath: `A(${distance})=${costA},\\qquad B(${distance})=${costB},\\qquad \\min=${answer}`,
+    };
+  }
+
+  if (unitId === "sequences") {
+    const first = pick([40, 50, 60]);
+    const add = pick([10, 15, 20]);
+    const weeks = pick([8, 10, 12]);
+    const last = first + (weeks - 1) * add;
+    const answer = (weeks * (first + last)) / 2;
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Maja odkłada pieniądze na laptop. W pierwszym tygodniu odkłada ${first} zł, a w każdym kolejnym tygodniu o ${add} zł więcej niż tydzień wcześniej. Chce wiedzieć nie ile odłoży w ostatnim tygodniu, lecz ile pieniędzy zgromadzi łącznie po ${weeks} tygodniach. Oblicz całkowitą kwotę.`,
+        `Maja is saving for a laptop. She saves ${first} in week one and ${add} more each following week. She wants the total saved after ${weeks} weeks, not just the final week's amount. Calculate the total.`,
+      ),
+      math: `S_n=\\frac{n(a_1+a_n)}{2}`,
+      answer,
+      answerSuffix: locale === "pl" ? " zł" : "",
+      hint: t(
+        locale,
+        "Najpierw oblicz ostatni wyraz ciągu, a następnie sumę wszystkich wyrazów.",
+        "First find the last term, then use the sum formula.",
+      ),
+      solution: t(locale, "Obliczamy ostatni wyraz i sumę:", "Find the last term and then the sum:"),
+      solutionMath: `a_${weeks}=${last},\\qquad S_${weeks}=\\frac{${weeks}(${first}+${last})}{2}=${answer}`,
+    };
+  }
+
+  if (unitId === "systems") {
+    const normal = pick([26, 30, 32]);
+    const reduced = pick([16, 18, 20]);
+    const adults = pick([2, 3, 4]);
+    const students = pick([3, 4, 5]);
+    const total = adults * normal + students * reduced;
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Grupa zapłaciła za bilety do muzeum ${total} zł. Kupiono ${adults} bilety normalne i ${students} ulgowe. Bilet normalny kosztuje o ${normal - reduced} zł więcej niż ulgowy. Ile kosztuje bilet ulgowy? Zapisz zależności i sprawdź wynik z łączną kwotą.`,
+        `A group paid ${total} for museum tickets: ${adults} adult tickets and ${students} reduced tickets. An adult ticket costs ${normal - reduced} more than a reduced ticket. What is the reduced ticket price? Model the relationships and verify the total.`,
+      ),
+      math: `\\begin{cases}${adults}x+${students}y=${total}\\\\x-y=${normal - reduced}\\end{cases}`,
+      answer: reduced,
+      answerSuffix: locale === "pl" ? " zł" : "",
+      hint: t(locale, "Nie zgaduj ceny — wykorzystaj oba warunki jednocześnie.", "Use both conditions together rather than guessing."),
+      solution: t(locale, "Rozwiązanie układu daje ceny obu typów biletów:", "Solving the system gives both ticket prices:"),
+      solutionMath: `x=${normal},\\qquad y=${reduced}`,
+    };
+  }
+
+  if (unitId === "planimetry") {
+    const length = pick([20, 24, 30]);
+    const width = pick([12, 15, 18]);
+    const path = 1;
+    const outer = length * width;
+    const inner = (length - 2 * path) * (width - 2 * path);
+    const answer = outer - inner;
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Prostokątny ogród ma wymiary ${length} m × ${width} m. Wzdłuż całego wewnętrznego brzegu ogrodu ma powstać ścieżka o szerokości ${path} m. Oblicz powierzchnię samej ścieżki, a nie całego ogrodu.`,
+        `A rectangular garden measures ${length} m by ${width} m. A ${path} m wide path is built all along the inside edge. Find the area of the path only, not the whole garden.`,
+      ),
+      math: `P_{ścieżki}=P_{zew}-P_{wew}`,
+      answer,
+      answerSuffix: " m²",
+      hint: t(locale, "Odejmij pole mniejszego prostokąta bez ścieżki od pola całego ogrodu.", "Subtract the inner rectangle from the whole garden."),
+      solution: t(locale, "Wewnętrzny prostokąt jest krótszy o 2 m w każdym wymiarze.", "The inner rectangle is smaller by 2 m in each dimension."),
+      solutionMath: `P=${length}\\cdot${width}-(${length - 2})(${width - 2})=${answer}`,
+    };
+  }
+
+  if (unitId === "probability") {
+    const red = 4;
+    const blue = 6;
+    const total = red + blue;
+    const answer = Number(((red / total) * ((red - 1) / (total - 1)) * 100).toFixed(2));
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `W pudełku są ${red} czerwone i ${blue} niebieskich kul. Losujemy kolejno dwie kule bez zwracania pierwszej. Jakie jest prawdopodobieństwo, że obie wylosowane kule będą czerwone? Podaj wynik w procentach.`,
+        `A box contains ${red} red and ${blue} blue balls. Two balls are drawn without replacement. What is the probability that both are red? Give a percentage.`,
+      ),
+      math: `P=\\frac{${red}}{${total}}\\cdot\\frac{${red - 1}}{${total - 1}}`,
+      answer,
+      answerSuffix: "%",
+      hint: t(locale, "Po pierwszym losowaniu zmienia się zarówno liczba czerwonych kul, jak i liczba wszystkich kul.", "After the first draw, both the number of red balls and the total number change."),
+      solution: t(locale, "Mnożymy prawdopodobieństwa kolejnych zdarzeń warunkowych:", "Multiply the probabilities of the consecutive conditional events:"),
+      solutionMath: `P=\\frac{${red}}{${total}}\\cdot\\frac{${red - 1}}{${total - 1}}=${answer}\\%`,
+    };
+  }
+
+  if (unitId === "stereometry") {
+    const length = 40;
+    const width = 25;
+    const height = 30;
+    const fill = pick([60, 70, 80]);
+    const full = (length * width * height) / 1000;
+    const answer = Number((full * fill / 100).toFixed(2));
+    return {
+      id: token,
+      unitId,
+      kind: "word",
+      difficulty: "hard",
+      points: 4,
+      lead: t(
+        locale,
+        `Akwarium ma wymiary ${length} cm × ${width} cm × ${height} cm. Nie jest napełnione do pełna — woda zajmuje ${fill}% jego objętości. Ile litrów wody znajduje się w akwarium? Przyjmij 1 litr = 1000 cm³.`,
+        `An aquarium measures ${length} cm × ${width} cm × ${height} cm and is only ${fill}% full. How many litres of water does it contain? Use 1 litre = 1000 cm³.`,
+      ),
+      math: `V_w=${fill}\\%\\cdot \\frac{${length}\\cdot${width}\\cdot${height}}{1000}`,
+      answer,
+      answerSuffix: " l",
+      hint: t(locale, "Najpierw oblicz pełną pojemność, potem weź odpowiedni procent.", "Find full capacity first, then take the required percentage."),
+      solution: t(locale, "Pełna pojemność i faktyczna ilość wody:", "Full capacity and actual amount of water:"),
+      solutionMath: `V=${full}\\text{ l},\\qquad V_w=${fill / 100}\\cdot${full}=${answer}\\text{ l}`,
+    };
+  }
+
+  return generateWordQuestion(unitId, locale, seed);
+}
+
 function makeMcq(
   question: GeneratedQuestion,
   locale: Locale,
@@ -466,10 +679,11 @@ export function generateQuestion(
   if (mode === "quick") return baseQuestion(unitId, locale, token);
   if (mode === "word") return generateWordQuestion(unitId, locale, seed);
 
-  const variant = int(0, 3);
+  const variant = int(0, 4);
   if (variant === 0) return baseQuestion(unitId, locale, token);
   if (variant === 1) return generateWordQuestion(unitId, locale, seed);
-  if (variant === 2) return makeMcq(baseQuestion(unitId, locale, token), locale);
+  if (variant === 2) return generateReasoningQuestion(unitId, locale, seed);
+  if (variant === 3) return makeMcq(baseQuestion(unitId, locale, token), locale);
   return makeMcq(generateWordQuestion(unitId, locale, seed), locale);
 }
 
@@ -485,10 +699,11 @@ export function generateSet(
   return Array.from({ length: count }, (_, i) => {
     const unitId = source[i % source.length];
     const seed = Date.now() + i;
-    const pattern = i % 4;
+    const pattern = i % 5;
     if (pattern === 0) return generateQuestion(unitId, locale, seed, "quick");
     if (pattern === 1) return generateQuestion(unitId, locale, seed, "word");
-    if (pattern === 2)
+    if (pattern === 2) return generateReasoningQuestion(unitId, locale, seed);
+    if (pattern === 3)
       return makeMcq(generateQuestion(unitId, locale, seed, "quick"), locale);
     return makeMcq(generateQuestion(unitId, locale, seed, "word"), locale);
   });
