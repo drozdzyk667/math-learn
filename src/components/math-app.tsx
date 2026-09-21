@@ -339,7 +339,7 @@ export function MathApp({
               setProgress(initialProgress);
               for (let index = localStorage.length - 1; index >= 0; index -= 1) {
                 const key = localStorage.key(index);
-                if (key?.startsWith("mathly-lesson-rewards:")) {
+                if (key?.startsWith("mathly-lesson-")) {
                   localStorage.removeItem(key);
                 }
               }
