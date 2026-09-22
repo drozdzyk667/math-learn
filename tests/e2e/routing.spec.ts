@@ -166,6 +166,18 @@ test("assessment floating dock stays below bars and disables page boundaries", a
     controlsBox!.y + controlsBox!.height + 10,
   );
 
+  await page.evaluate(() => window.scrollTo(0, 700));
+  await expect.poll(async () => {
+    const box = await dock.boundingBox();
+    return box?.y ?? 9999;
+  }).toBeLessThanOrEqual(40);
+
+  const scrolledControlsBox = await controls.boundingBox();
+  expect(scrolledControlsBox).not.toBeNull();
+  expect(scrolledControlsBox!.y + scrolledControlsBox!.height).toBeLessThan(20);
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+
   const previous = dock.getByRole("button", { name: /Poprzednia strona/i });
   const next = dock.getByRole("button", { name: /Następna strona/i });
 
