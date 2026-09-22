@@ -59,7 +59,10 @@ test("assessment pagination returns the viewport to the top", async ({ page }) =
   await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
 
   await page.evaluate(() => window.scrollTo(0, 1200));
-  await page.getByRole("button", { name: /^Dalej$/i }).click();
+  await page
+    .locator(".assessment-floating-dock")
+    .getByRole("button", { name: /Następna strona/i })
+    .click();
 
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(120);
   await expect(page.getByText(/2 \/ 3/)).toBeVisible();
@@ -71,9 +74,9 @@ test("submitted unit test shows a detailed error review", async ({ page }) => {
   await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
   await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
 
-  const bottomNav = page.locator(".assessment-bottom-nav");
-  await bottomNav.getByRole("button", { name: /Następna strona/i }).click();
-  await bottomNav.getByRole("button", { name: /Następna strona/i }).click();
+  const dock = page.locator(".assessment-floating-dock");
+  await dock.getByRole("button", { name: /Następna strona/i }).click();
+  await dock.getByRole("button", { name: /Następna strona/i }).click();
   await page.getByRole("button", { name: /Oddaj arkusz/i }).click();
 
   await expect(page.getByText("PODSUMOWANIE ARKUSZA")).toBeVisible();
