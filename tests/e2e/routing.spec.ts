@@ -149,12 +149,23 @@ test("lesson exercise exposes separate yellow hint and red answer reveals", asyn
 });
 
 
-test("assessment floating dock mirrors page navigation and disables boundaries", async ({ page }) => {
+test("assessment floating dock stays below bars and disables page boundaries", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/pl/tests");
   await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
   await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
 
   const dock = page.locator(".assessment-floating-dock");
+  const controls = page.locator(".paper-controls");
+  const dockBox = await dock.boundingBox();
+  const controlsBox = await controls.boundingBox();
+
+  expect(dockBox).not.toBeNull();
+  expect(controlsBox).not.toBeNull();
+  expect(dockBox!.y).toBeGreaterThanOrEqual(
+    controlsBox!.y + controlsBox!.height + 10,
+  );
+
   const previous = dock.getByRole("button", { name: /Poprzednia strona/i });
   const next = dock.getByRole("button", { name: /Następna strona/i });
 
