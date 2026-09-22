@@ -4040,6 +4040,6 @@
 /* Floating assessment controls start below the two assessment bars on wide screens. */
 @media (min-width: 1501px) {
   .assessment-floating-dock {
-    top: 226px !important;
+    top: var(--assessment-dock-top, 226px) !important;
   }
 }
