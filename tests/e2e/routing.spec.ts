@@ -69,7 +69,7 @@ test("assessment pagination returns the viewport to the top", async ({ page }) =
 });
 
 
-test("submitted unit test starts with summary and can toggle an annotated full paper", async ({ page }) => {
+test("submitted unit test shows detailed summary without reopening the paper", async ({ page }) => {
   await page.goto("/pl/tests");
   await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
   await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
@@ -87,36 +87,9 @@ test("submitted unit test starts with summary and can toggle an annotated full p
   await expect(page.getByText("Poprawna odpowiedź").first()).toBeVisible();
   await expect(page.getByText("Dlaczego tak?").first()).toBeVisible();
   await expect(page.locator(".paper-viewport")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Odpowiedzi na arkuszu/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Zobacz odpowiedzi na arkuszu/i })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(160);
-
-  await page
-    .getByRole("button", { name: /Zobacz odpowiedzi na arkuszu/i })
-    .click();
-
-  await expect(page.locator(".paper-viewport.result-review")).toBeVisible();
-  await expect(page.getByText("1 / 3", { exact: true })).toBeVisible();
-
-  const reviewDock = page.locator(".assessment-floating-dock.review-mode");
-  await expect(
-    reviewDock.getByRole("button", { name: /Poprzednia strona/i }),
-  ).toBeDisabled();
-  await expect(
-    reviewDock.getByRole("button", { name: /Następna strona/i }),
-  ).toBeEnabled();
-
-  await expect(page.getByText(/Błędnie/i).first()).toBeVisible();
-  await expect(page.getByText(/Co poprawić/i).first()).toBeVisible();
-  await expect(page.getByText(/Rozwiązanie/i).first()).toBeVisible();
-
-  await reviewDock.getByRole("button", { name: /Następna strona/i }).click();
-  await expect(page.getByText("2 / 3", { exact: true })).toBeVisible();
-
-  await page
-    .getByRole("button", { name: /Odpowiedzi — skrót/i })
-    .click();
-
-  await expect(page.getByText("PODSUMOWANIE ARKUSZA")).toBeVisible();
-  await expect(page.locator(".paper-viewport")).toHaveCount(0);
 });
 
 test("Polish flashcards and profile stay fully localized", async ({ page }) => {
