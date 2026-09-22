@@ -155,9 +155,11 @@ export function AssessmentSummary({
               : "You get more than a score: below are missed questions, unanswered items and the units worth revisiting."}
           </p>
         </div>
-        <button className="secondary" onClick={onReviewPaper}>
+        <button className="primary assessment-summary-paper-cta" onClick={onReviewPaper}>
           <BookOpenCheck size={17} />
-          {lang === "pl" ? "Przejrzyj cały arkusz" : "Review full paper"}
+          {lang === "pl"
+            ? "Zobacz odpowiedzi na arkuszu"
+            : "See answers on the paper"}
         </button>
       </div>
 
