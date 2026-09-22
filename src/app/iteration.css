@@ -4121,3 +4121,97 @@
     min-width: 0 !important;
   }
 }
+
+
+/* Final assessment workspace: the dock lives beside the paper and sticks below app navigation. */
+.topbar {
+  z-index: 60;
+}
+
+.assessment-workspace {
+  width: 100%;
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 118px;
+  align-items: start;
+  gap: 18px;
+}
+
+.assessment-workspace > .paper-viewport {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.assessment-workspace > .assessment-floating-dock {
+  position: sticky !important;
+  top: 84px !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 15 !important;
+  align-self: start;
+  width: 118px !important;
+  min-width: 118px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.assessment-workspace > .assessment-floating-dock .assessment-floating-timer,
+.assessment-workspace > .assessment-floating-dock .assessment-floating-page,
+.assessment-workspace > .assessment-floating-dock .assessment-floating-nav,
+.assessment-workspace > .assessment-floating-dock .assessment-dock-submit,
+.assessment-workspace > .assessment-floating-dock .assessment-review-back {
+  width: 118px !important;
+  min-width: 118px !important;
+  box-sizing: border-box;
+}
+
+.assessment-workspace.result-review {
+  margin-top: 8px;
+}
+
+.assessment-workspace.result-review > .assessment-floating-dock {
+  top: 84px !important;
+}
+
+@media (max-width: 760px) {
+  .assessment-workspace {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .assessment-workspace > .assessment-floating-dock {
+    grid-row: 1;
+    top: 124px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 6px !important;
+    border: 1px solid var(--line) !important;
+    grid-template-columns: 84px 52px 88px minmax(74px, 1fr) !important;
+    align-items: center;
+    background: color-mix(in srgb, var(--surface) 95%, transparent) !important;
+    box-shadow: 0 14px 36px rgba(12, 10, 28, .18) !important;
+    backdrop-filter: blur(16px) !important;
+  }
+
+  .assessment-workspace > .assessment-floating-dock .assessment-floating-timer,
+  .assessment-workspace > .assessment-floating-dock .assessment-floating-page,
+  .assessment-workspace > .assessment-floating-dock .assessment-floating-nav,
+  .assessment-workspace > .assessment-floating-dock .assessment-dock-submit,
+  .assessment-workspace > .assessment-floating-dock .assessment-review-back {
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  .assessment-workspace.result-review > .assessment-floating-dock {
+    grid-template-columns: minmax(110px, 1fr) 54px 88px !important;
+  }
+}
