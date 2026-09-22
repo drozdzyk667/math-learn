@@ -3642,3 +3642,277 @@
     width: 92px;
   }
 }
+
+
+/* =========================================================
+   Post-assessment review: summary vs annotated paper
+   ========================================================= */
+
+.assessment-result-toggle {
+  width: min(620px, 100%);
+  margin: 0 auto 16px;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  background: var(--surface-2);
+  box-shadow: 0 10px 28px rgba(12, 10, 28, .08);
+}
+.assessment-result-toggle button {
+  min-height: 42px;
+  padding: 0 13px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.assessment-result-toggle button.active {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  box-shadow: 0 6px 18px rgba(89, 65, 194, .11);
+}
+.assessment-result-toggle button.active svg {
+  color: var(--accent-2);
+}
+
+.assessment-summary-paper-cta {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+/* Review mode keeps navigation available after submission. */
+.assessment-floating-dock.review-mode {
+  grid-template-rows: auto auto auto;
+}
+.assessment-review-back {
+  min-height: 42px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  font: inherit;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.assessment-review-back svg {
+  color: var(--accent-2);
+}
+
+.result-review {
+  padding-bottom: 26px;
+}
+.result-review .paper-page {
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, .24),
+    0 0 0 1px rgba(255, 255, 255, .04);
+}
+
+.paper-question.review-correct,
+.paper-question.review-wrong,
+.paper-question.review-unanswered {
+  position: relative;
+  border-radius: 10px;
+  padding: 11px 10px 14px;
+  margin-left: -10px;
+  margin-right: -10px;
+}
+.paper-question.review-correct {
+  background: rgba(35, 145, 103, .045);
+  box-shadow: inset 3px 0 0 #278c68;
+}
+.paper-question.review-wrong {
+  background: rgba(190, 55, 75, .055);
+  box-shadow: inset 3px 0 0 #b83d53;
+}
+.paper-question.review-unanswered {
+  background: rgba(181, 126, 28, .055);
+  box-shadow: inset 3px 0 0 #a9771f;
+}
+
+.paper-question-head-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.paper-review-status {
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: .15px;
+}
+.paper-review-status.correct {
+  color: #166f52;
+  background: rgba(38, 155, 113, .11);
+}
+.paper-review-status.wrong {
+  color: #a52940;
+  background: rgba(193, 56, 79, .1);
+}
+.paper-review-status.unanswered {
+  color: #865d0e;
+  background: rgba(183, 128, 29, .11);
+}
+
+.result-review .paper-mcq-options button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.result-review .paper-mcq-options button.correct-option {
+  border-color: #2b946f !important;
+  color: #185f49 !important;
+  background: rgba(43, 148, 111, .09) !important;
+}
+.result-review .paper-mcq-options button.correct-option > b {
+  color: #fff;
+  border-color: #267d60;
+  background: #2b946f;
+}
+.result-review .paper-mcq-options button.wrong-option {
+  border-color: #bd4056 !important;
+  color: #8e2639 !important;
+  background: rgba(189, 64, 86, .08) !important;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.result-review .paper-mcq-options button.wrong-option > b {
+  color: #fff;
+  border-color: #a93349;
+  background: #bd4056;
+}
+.result-review .paper-mcq-options button.selected.correct-option {
+  box-shadow: inset 0 0 0 2px rgba(43, 148, 111, .18);
+}
+
+.paper-unanswered {
+  color: #865d0e;
+  font-size: 9px;
+}
+
+.paper-review-note {
+  margin-top: 11px;
+  padding: 11px 12px;
+  border-radius: 9px;
+  display: grid;
+  gap: 8px;
+  font-family: Inter, Arial, sans-serif;
+}
+.paper-review-note.correct {
+  border: 1px solid rgba(43, 148, 111, .26);
+  background: rgba(43, 148, 111, .055);
+}
+.paper-review-note.wrong {
+  border: 1px solid rgba(189, 64, 86, .28);
+  background: rgba(189, 64, 86, .055);
+}
+.paper-review-note.unanswered {
+  border: 1px solid rgba(183, 128, 29, .3);
+  background: rgba(183, 128, 29, .06);
+}
+.paper-review-note-head,
+.paper-review-solution {
+  display: grid;
+  gap: 3px;
+}
+.paper-review-note-head b,
+.paper-review-solution strong {
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .45px;
+}
+.paper-review-note.correct .paper-review-note-head b {
+  color: #207b5d;
+}
+.paper-review-note.wrong .paper-review-note-head b {
+  color: #aa3046;
+}
+.paper-review-note.unanswered .paper-review-note-head b {
+  color: #865d0e;
+}
+.paper-review-note-head span,
+.paper-review-solution > span {
+  color: #4d5361;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.paper-review-solution {
+  padding-top: 7px;
+  border-top: 1px solid rgba(42, 46, 56, .11);
+}
+.paper-review-solution .katex {
+  color: #171a21 !important;
+  font-size: 1.08em;
+}
+
+/* On the submitted paper, the working area can be shorter because feedback follows it. */
+.result-review .working-space {
+  min-height: 42px !important;
+}
+.result-review .working-space.large {
+  min-height: 64px !important;
+}
+
+@media (max-width: 1500px) {
+  .assessment-floating-dock.review-mode {
+    grid-template-columns: auto auto auto;
+    min-width: 286px;
+  }
+  .assessment-floating-dock.review-mode .assessment-review-back {
+    min-width: 108px;
+  }
+}
+
+@media (max-width: 700px) {
+  .assessment-result-toggle {
+    width: 100%;
+  }
+  .assessment-result-toggle button {
+    min-height: 46px;
+    font-size: 10px;
+  }
+  .assessment-summary-paper-cta {
+    width: 100%;
+    justify-content: center;
+  }
+  .assessment-floating-dock.review-mode {
+    grid-template-columns: minmax(98px, 1fr) 54px 88px;
+  }
+  .paper-question.review-correct,
+  .paper-question.review-wrong,
+  .paper-question.review-unanswered {
+    margin-left: -5px;
+    margin-right: -5px;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+  .paper-question-head-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 460px) {
+  .assessment-result-toggle {
+    grid-template-columns: 1fr;
+  }
+  .assessment-floating-dock.review-mode {
+    grid-template-columns: minmax(90px, 1fr) 48px 78px;
+  }
+}
