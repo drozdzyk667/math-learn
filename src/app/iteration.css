@@ -4215,3 +4215,11 @@
     grid-template-columns: minmax(110px, 1fr) 54px 88px !important;
   }
 }
+
+
+/* Mobile app navigation is ~175px tall; keep the assessment dock visibly below it. */
+@media (max-width: 760px) {
+  .assessment-workspace > .assessment-floating-dock {
+    top: 190px !important;
+  }
+}
