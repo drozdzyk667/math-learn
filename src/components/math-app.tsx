@@ -1422,13 +1422,6 @@ function Assessment({
     });
   };
 
-  return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", syncDockPosition);
-      window.removeEventListener("scroll", syncDockPosition);
-    };
-  }, [currentPage, result]);
-
   return (
     <div className="assessment-screen" id="assessment-top" tabIndex={-1}>
       <div className="assessment-toolbar">
