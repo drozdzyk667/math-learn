@@ -149,48 +149,66 @@ test("lesson exercise exposes separate yellow hint and red answer reveals", asyn
 });
 
 
-test("assessment floating dock stays below bars and disables page boundaries", async ({ page }) => {
-  await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.goto("/pl/tests");
-  await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
-  await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
+for (const width of [1920, 1440, 1280]) {
+  test(`assessment dock starts below bars then sticks near top at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1080 });
+    await page.goto("/pl/tests");
+    await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
+    await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
 
-  const dock = page.locator(".assessment-floating-dock");
-  const controls = page.locator(".paper-controls");
-  const dockBox = await dock.boundingBox();
-  const controlsBox = await controls.boundingBox();
+    const dockRow = page.locator(".assessment-sticky-dock-row");
+    const dock = page.locator(".assessment-floating-dock");
+    const controls = page.locator(".paper-controls");
 
-  expect(dockBox).not.toBeNull();
-  expect(controlsBox).not.toBeNull();
-  expect(dockBox!.y).toBeGreaterThanOrEqual(
-    controlsBox!.y + controlsBox!.height + 10,
-  );
+    const dockBox = await dock.boundingBox();
+    const controlsBox = await controls.boundingBox();
 
-  await page.evaluate(() => window.scrollTo(0, 700));
-  await expect.poll(async () => {
-    const box = await dock.boundingBox();
-    return box?.y ?? 9999;
-  }).toBeLessThanOrEqual(40);
+    expect(dockBox).not.toBeNull();
+    expect(controlsBox).not.toBeNull();
+    expect(dockBox!.y).toBeGreaterThanOrEqual(
+      controlsBox!.y + controlsBox!.height + 12,
+    );
 
-  const scrolledControlsBox = await controls.boundingBox();
-  expect(scrolledControlsBox).not.toBeNull();
-  expect(scrolledControlsBox!.y + scrolledControlsBox!.height).toBeLessThan(20);
+    const layout = await dockRow.evaluate((element) => {
+      const rowStyle = getComputedStyle(element);
+      const dockElement = element.querySelector(".assessment-floating-dock");
+      const dockStyle = dockElement ? getComputedStyle(dockElement) : null;
+      return {
+        rowPosition: rowStyle.position,
+        rowTop: rowStyle.top,
+        dockPosition: dockStyle?.position,
+        dockTop: dockStyle?.top,
+        dockBottom: dockStyle?.bottom,
+      };
+    });
 
-  await page.evaluate(() => window.scrollTo(0, 0));
+    expect(layout.rowPosition).toBe("sticky");
+    expect(layout.dockPosition).toBe("relative");
+    expect(layout.dockTop).toBe("0px");
+    expect(layout.dockBottom).toBe("auto");
 
-  const previous = dock.getByRole("button", { name: /Poprzednia strona/i });
-  const next = dock.getByRole("button", { name: /Następna strona/i });
+    await page.evaluate(() => window.scrollTo(0, 700));
 
-  await expect(previous).toBeDisabled();
-  await expect(next).toBeEnabled();
+    await expect.poll(async () => {
+      const box = await dock.boundingBox();
+      return box?.y ?? 9999;
+    }).toBeLessThanOrEqual(42);
 
-  await next.click();
-  await expect(previous).toBeEnabled();
+    const previous = dock.getByRole("button", { name: /Poprzednia strona/i });
+    const next = dock.getByRole("button", { name: /Następna strona/i });
 
-  await next.click();
-  await expect(next).toBeDisabled();
-  await expect(dock.getByRole("button", { name: /Oddaj/i })).toBeVisible();
-});
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(previous).toBeDisabled();
+    await expect(next).toBeEnabled();
+
+    await next.click();
+    await expect(previous).toBeEnabled();
+
+    await next.click();
+    await expect(next).toBeDisabled();
+    await expect(dock.getByRole("button", { name: /Oddaj/i })).toBeVisible();
+  });
+}
 
 test("function laboratory exposes multiple stable graph experiments", async ({ page }) => {
   await page.goto("/pl/lab");
