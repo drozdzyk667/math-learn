@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  BookOpenCheck,
   CheckCircle2,
   CircleAlert,
   Target,
@@ -55,10 +56,12 @@ export function AssessmentSummary({
   lang,
   questions,
   answers,
+  onReviewPaper,
 }: {
   lang: Language;
   questions: GeneratedQuestion[];
   answers: Record<string, string>;
+  onReviewPaper: () => void;
 }) {
   const rows = questions.map((question, index) => ({
     question,
@@ -152,6 +155,12 @@ export function AssessmentSummary({
               : "You get more than a score: below are missed questions, unanswered items and the units worth revisiting."}
           </p>
         </div>
+        <button className="primary assessment-summary-paper-cta" onClick={onReviewPaper}>
+          <BookOpenCheck size={17} />
+          {lang === "pl"
+            ? "Zobacz błędy na arkuszu"
+            : "See mistakes on the paper"}
+        </button>
       </div>
 
       <div className="assessment-summary-stats">
