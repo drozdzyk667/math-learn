@@ -69,7 +69,7 @@ test("assessment pagination returns the viewport to the top", async ({ page }) =
 });
 
 
-test("submitted unit test shows detailed summary without reopening the paper", async ({ page }) => {
+test("submitted unit test can reopen an annotated paper with mistakes", async ({ page }) => {
   await page.goto("/pl/tests");
   await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
   await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
@@ -82,14 +82,30 @@ test("submitted unit test shows detailed summary without reopening the paper", a
   await activeDock.getByRole("button", { name: /^Oddaj$/i }).click();
 
   await expect(page.getByText("PODSUMOWANIE ARKUSZA")).toBeVisible();
-  await expect(page.getByText(/zadań wymaga powtórki/i)).toBeVisible();
-  await expect(page.getByText("Twoja odpowiedź").first()).toBeVisible();
-  await expect(page.getByText("Poprawna odpowiedź").first()).toBeVisible();
-  await expect(page.getByText("Dlaczego tak?").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /Zobacz błędy na arkuszu/i })).toBeVisible();
+
+  await page.getByRole("button", { name: /Zobacz błędy na arkuszu/i }).click();
+
+  await expect(page.getByText("SPRAWDZONY ARKUSZ")).toBeVisible();
+  await expect(page.locator(".paper-viewport.result-review")).toBeVisible();
+  await expect(page.getByText(/Błędnie/i).first()).toBeVisible();
+  await expect(page.getByText(/Co poprawić/i).first()).toBeVisible();
+  await expect(page.getByText(/Rozwiązanie/i).first()).toBeVisible();
+
+  const reviewDock = page.locator(".assessment-workspace.result-review .assessment-floating-dock");
+  await expect(
+    reviewDock.getByRole("button", { name: /Poprzednia strona/i }),
+  ).toBeDisabled();
+  await expect(
+    reviewDock.getByRole("button", { name: /Następna strona/i }),
+  ).toBeEnabled();
+
+  await reviewDock.getByRole("button", { name: /Następna strona/i }).click();
+  await expect(page.getByText("2 / 3", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: /Wróć do podsumowania/i }).click();
+  await expect(page.getByText("PODSUMOWANIE ARKUSZA")).toBeVisible();
   await expect(page.locator(".paper-viewport")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Odpowiedzi na arkuszu/i })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Zobacz odpowiedzi na arkuszu/i })).toHaveCount(0);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(160);
 });
 
 test("Polish flashcards and profile stay fully localized", async ({ page }) => {
@@ -150,58 +166,54 @@ test("lesson exercise exposes separate yellow hint and red answer reveals", asyn
 
 
 for (const width of [1920, 1440, 1280]) {
-  test(`assessment dock starts below bars then sticks near top at ${width}px`, async ({ page }) => {
+  test(`assessment dock starts beside paper and sticks below topbar at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1080 });
     await page.goto("/pl/tests");
     await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
     await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
 
-    const dockRow = page.locator(".assessment-sticky-dock-row");
-    const dock = page.locator(".assessment-floating-dock");
+    const workspace = page.locator(".assessment-workspace");
+    const dock = workspace.locator(".assessment-floating-dock");
     const controls = page.locator(".paper-controls");
+    const topbar = page.locator(".topbar");
 
+    const workspaceBox = await workspace.boundingBox();
     const dockBox = await dock.boundingBox();
     const controlsBox = await controls.boundingBox();
+    const topbarBox = await topbar.boundingBox();
 
+    expect(workspaceBox).not.toBeNull();
     expect(dockBox).not.toBeNull();
     expect(controlsBox).not.toBeNull();
+    expect(topbarBox).not.toBeNull();
+
     expect(dockBox!.y).toBeGreaterThanOrEqual(
       controlsBox!.y + controlsBox!.height + 12,
     );
 
-    const layout = await dockRow.evaluate((element) => {
-      const rowStyle = getComputedStyle(element);
-      const dockElement = element.querySelector(".assessment-floating-dock");
-      const dockStyle = dockElement ? getComputedStyle(dockElement) : null;
+    const layout = await dock.evaluate((element) => {
+      const style = getComputedStyle(element);
       return {
-        rowPosition: rowStyle.position,
-        rowTop: rowStyle.top,
-        dockPosition: dockStyle?.position,
-        dockTop: dockStyle?.top,
-        dockBottom: dockStyle?.bottom,
+        position: style.position,
+        top: style.top,
+        bottom: style.bottom,
       };
     });
 
-    expect(layout.rowPosition).toBe("sticky");
-    expect(layout.dockPosition).toBe("relative");
-    expect(layout.dockTop).toBe("0px");
-    expect(layout.dockBottom).toBe("auto");
+    expect(layout.position).toBe("sticky");
+    expect(layout.top).toBe("84px");
+    expect(layout.bottom).toBe("auto");
 
-    const topbar = page.locator(".topbar");
-    const topbarBox = await topbar.boundingBox();
-    expect(topbarBox).not.toBeNull();
-    expect(topbarBox!.height).toBe(68);
-
-    await page.evaluate(() => window.scrollTo(0, 700));
+    await page.evaluate(() => window.scrollTo(0, 900));
 
     await expect.poll(async () => {
       const box = await dock.boundingBox();
       return box?.y ?? 9999;
-    }).toBeGreaterThanOrEqual(topbarBox!.height + 10);
+    }).toBeGreaterThanOrEqual(topbarBox!.height + 12);
 
-    const stuckDockBox = await dock.boundingBox();
-    expect(stuckDockBox).not.toBeNull();
-    expect(stuckDockBox!.y).toBeLessThanOrEqual(topbarBox!.height + 18);
+    const stuckDock = await dock.boundingBox();
+    expect(stuckDock).not.toBeNull();
+    expect(stuckDock!.y).toBeLessThanOrEqual(topbarBox!.height + 20);
 
     const previous = dock.getByRole("button", { name: /Poprzednia strona/i });
     const next = dock.getByRole("button", { name: /Następna strona/i });
@@ -218,8 +230,6 @@ for (const width of [1920, 1440, 1280]) {
     await expect(dock.getByRole("button", { name: /Oddaj/i })).toBeVisible();
   });
 }
-
-
 
 test("mobile assessment dock stays below sticky app navigation", async ({ page }) => {
   await page.setViewportSize({ width: 700, height: 900 });
