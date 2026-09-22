@@ -101,7 +101,7 @@ test("submitted unit test can reopen an annotated paper with mistakes", async ({
   ).toBeEnabled();
 
   await reviewDock.getByRole("button", { name: /Następna strona/i }).click();
-  await expect(page.getByText("2 / 3", { exact: true })).toBeVisible();
+  await expect(reviewDock.getByText("2/3", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: /Wróć do podsumowania/i }).click();
   await expect(page.getByText("PODSUMOWANIE ARKUSZA")).toBeVisible();
@@ -247,7 +247,7 @@ test("mobile assessment dock stays below sticky app navigation", async ({ page }
 
   expect(sidebarBox).not.toBeNull();
   expect(dockBox).not.toBeNull();
-  expect(dockBox!.y).toBeGreaterThanOrEqual(sidebarBox!.y + sidebarBox!.height + 6);
+  expect(dockBox!.y).toBeGreaterThanOrEqual(sidebarBox!.y + sidebarBox!.height + 10);
 });
 
 test("function laboratory exposes multiple stable graph experiments", async ({ page }) => {
