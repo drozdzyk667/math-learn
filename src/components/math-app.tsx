@@ -1617,6 +1617,32 @@ function Assessment({
         />
       )}
 
+      {result !== null && resultView === "paper" && (
+        <div className="assessment-paper-review-head">
+          <div>
+            <span className="eyebrow">
+              <CheckCircle2 size={14} />
+              {lang === "pl" ? "SPRAWDZONY ARKUSZ" : "MARKED PAPER"}
+            </span>
+            <b>
+              {lang === "pl"
+                ? "Przejrzyj każde zadanie strona po stronie"
+                : "Review every question page by page"}
+            </b>
+            <small>
+              {lang === "pl"
+                ? "Strzałki w ruchomym panelu pozwalają przejść przez cały arkusz."
+                : "Use the arrows in the floating dock to review the entire paper."}
+            </small>
+          </div>
+          <div className="assessment-review-legend" aria-label={lang === "pl" ? "Legenda wyniku" : "Result legend"}>
+            <span className="correct">{lang === "pl" ? "✓ Poprawnie" : "✓ Correct"}</span>
+            <span className="wrong">{lang === "pl" ? "✕ Błędnie" : "✕ Incorrect"}</span>
+            <span className="unanswered">{lang === "pl" ? "— Brak odpowiedzi" : "— Unanswered"}</span>
+          </div>
+        </div>
+      )}
+
       {(result === null || resultView === "paper") && (
       <div className={result !== null ? "paper-viewport result-review" : "paper-viewport"}>
         <div className="paper-stack single-page" style={paperStyle}>
