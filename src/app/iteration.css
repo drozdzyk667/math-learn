@@ -3916,3 +3916,67 @@
     grid-template-columns: minmax(90px, 1fr) 48px 78px;
   }
 }
+
+
+.assessment-paper-review-head {
+  width: min(1080px, 100%);
+  margin: 0 auto 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 5%, var(--surface)), var(--surface));
+}
+.assessment-paper-review-head > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+.assessment-paper-review-head > div:first-child > b {
+  font-size: 13px;
+}
+.assessment-paper-review-head > div:first-child > small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.assessment-review-legend {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.assessment-review-legend span {
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 8px;
+  font-weight: 900;
+}
+.assessment-review-legend .correct {
+  color: #166f52;
+  background: rgba(38, 155, 113, .1);
+}
+.assessment-review-legend .wrong {
+  color: #a52940;
+  background: rgba(193, 56, 79, .1);
+}
+.assessment-review-legend .unanswered {
+  color: #865d0e;
+  background: rgba(183, 128, 29, .11);
+}
+
+@media (max-width: 700px) {
+  .assessment-paper-review-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .assessment-review-legend {
+    justify-content: flex-start;
+  }
+}
