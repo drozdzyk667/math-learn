@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -1390,6 +1391,8 @@ function Assessment({
   const [paperZoom, setPaperZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(0);
   const [showAbortConfirm, setShowAbortConfirm] = useState(false);
+  const paperControlsRef = useRef<HTMLDivElement | null>(null);
+  const [dockTop, setDockTop] = useState(226);
   const paperStyle = {
     "--paper-scale": 1.4 * (paperZoom / 100),
   } as CSSProperties;
@@ -1422,6 +1425,29 @@ function Assessment({
     });
   };
 
+  useEffect(() => {
+    if (result !== null) return;
+
+    const syncDockPosition = () => {
+      if (window.innerWidth <= 1500) return;
+      const controls = paperControlsRef.current;
+      if (!controls) return;
+
+      const controlsBottom = controls.getBoundingClientRect().bottom;
+      setDockTop(Math.max(18, Math.round(controlsBottom + 14)));
+    };
+
+    const frame = window.requestAnimationFrame(syncDockPosition);
+    window.addEventListener("resize", syncDockPosition);
+    window.addEventListener("scroll", syncDockPosition, { passive: true });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", syncDockPosition);
+      window.removeEventListener("scroll", syncDockPosition);
+    };
+  }, [currentPage, result]);
+
   return (
     <div className="assessment-screen" id="assessment-top" tabIndex={-1}>
       <div className="assessment-toolbar">
@@ -1453,6 +1479,7 @@ function Assessment({
       {result === null && (
         <aside
           className="assessment-floating-dock"
+          style={{ "--assessment-dock-top": dockTop + "px" } as CSSProperties}
           aria-label={lang === "pl" ? "Nawigacja arkusza" : "Paper navigation"}
         >
           <div className="assessment-floating-timer">
@@ -1500,7 +1527,7 @@ function Assessment({
       )}
 
       {result === null && (
-        <div className="paper-controls panel">
+        <div ref={paperControlsRef} className="paper-controls panel">
           <div
             className="zoom-controls"
             role="group"
