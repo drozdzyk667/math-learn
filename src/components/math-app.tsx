@@ -1452,42 +1452,21 @@ function Assessment({
         <span className="assessment-toolbar-spacer" aria-hidden="true" />
       </div>
 
-      {(result === null || resultView === "paper") && (
+      {result === null && (
         <aside
-          className={
-            result === null
-              ? "assessment-floating-dock"
-              : "assessment-floating-dock review-mode"
-          }
+          className="assessment-floating-dock"
           aria-label={lang === "pl" ? "Nawigacja arkusza" : "Paper navigation"}
         >
-          {result === null ? (
-            <div className="assessment-floating-timer">
-              <Clock3 size={17} />
-              <b>
-                {timer !== undefined
-                  ? String(Math.floor(timer / 60)).padStart(2, "0") +
-                    ":" +
-                    String(timer % 60).padStart(2, "0")
-                  : durationLabel}
-              </b>
-            </div>
-          ) : (
-            <button
-              className="assessment-review-back"
-              onClick={() => {
-                setResultView("summary");
-                window.requestAnimationFrame(() => {
-                  document
-                    .getElementById("assessment-top")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                });
-              }}
-            >
-              <BarChart3 size={16} />
-              {lang === "pl" ? "Podsumowanie" : "Summary"}
-            </button>
-          )}
+          <div className="assessment-floating-timer">
+            <Clock3 size={17} />
+            <b>
+              {timer !== undefined
+                ? String(Math.floor(timer / 60)).padStart(2, "0") +
+                  ":" +
+                  String(timer % 60).padStart(2, "0")
+                : durationLabel}
+            </b>
+          </div>
 
           <div className="assessment-floating-page">
             <span>{lang === "pl" ? "STRONA" : "PAGE"}</span>
@@ -1513,7 +1492,7 @@ function Assessment({
             </button>
           </div>
 
-          {result === null && currentPage === pages.length - 1 && (
+          {currentPage === pages.length - 1 && (
             <button className="assessment-dock-submit" onClick={submitAssessment}>
               <CheckCircle2 size={17} />
               {lang === "pl" ? "Oddaj" : "Submit"}
@@ -1559,6 +1538,54 @@ function Assessment({
             <BookOpen size={16} />
             {lang === "pl" ? "Odpowiedzi na arkuszu" : "Answers on paper"}
           </button>
+        </div>
+      )}
+
+      {result !== null && resultView === "paper" && (
+        <div className="assessment-review-nav-row">
+          <aside
+            className="assessment-floating-dock review-mode"
+            aria-label={lang === "pl" ? "Nawigacja sprawdzonego arkusza" : "Reviewed paper navigation"}
+          >
+            <button
+              className="assessment-review-back"
+              onClick={() => {
+                setResultView("summary");
+                window.requestAnimationFrame(() => {
+                  document
+                    .getElementById("assessment-top")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }}
+            >
+              <BarChart3 size={16} />
+              {lang === "pl" ? "Podsumowanie" : "Summary"}
+            </button>
+
+            <div className="assessment-floating-page">
+              <span>{lang === "pl" ? "STRONA" : "PAGE"}</span>
+              <b>{currentPage + 1}/{pages.length}</b>
+            </div>
+
+            <div className="assessment-floating-nav">
+              <button
+                className="secondary"
+                disabled={currentPage === 0}
+                onClick={() => goToPage(currentPage - 1)}
+                aria-label={lang === "pl" ? "Poprzednia strona" : "Previous page"}
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                className="primary"
+                disabled={currentPage === pages.length - 1}
+                onClick={() => goToPage(currentPage + 1)}
+                aria-label={lang === "pl" ? "Następna strona" : "Next page"}
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </aside>
         </div>
       )}
 
