@@ -1390,6 +1390,7 @@ function Assessment({
   const [paperZoom, setPaperZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(0);
   const [showAbortConfirm, setShowAbortConfirm] = useState(false);
+  const [resultView, setResultView] = useState<"summary" | "paper">("summary");
   const paperStyle = {
     "--paper-scale": 1.4 * (paperZoom / 100),
   } as CSSProperties;
@@ -1411,6 +1412,8 @@ function Assessment({
   };
 
   const submitAssessment = () => {
+    setResultView("summary");
+    setCurrentPage(0);
     onFinish();
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
@@ -1449,21 +1452,42 @@ function Assessment({
         <span className="assessment-toolbar-spacer" aria-hidden="true" />
       </div>
 
-      {result === null && (
+      {(result === null || resultView === "paper") && (
         <aside
-          className="assessment-floating-dock"
+          className={
+            result === null
+              ? "assessment-floating-dock"
+              : "assessment-floating-dock review-mode"
+          }
           aria-label={lang === "pl" ? "Nawigacja arkusza" : "Paper navigation"}
         >
-          <div className="assessment-floating-timer">
-            <Clock3 size={17} />
-            <b>
-              {timer !== undefined
-                ? String(Math.floor(timer / 60)).padStart(2, "0") +
-                  ":" +
-                  String(timer % 60).padStart(2, "0")
-                : durationLabel}
-            </b>
-          </div>
+          {result === null ? (
+            <div className="assessment-floating-timer">
+              <Clock3 size={17} />
+              <b>
+                {timer !== undefined
+                  ? String(Math.floor(timer / 60)).padStart(2, "0") +
+                    ":" +
+                    String(timer % 60).padStart(2, "0")
+                  : durationLabel}
+              </b>
+            </div>
+          ) : (
+            <button
+              className="assessment-review-back"
+              onClick={() => {
+                setResultView("summary");
+                window.requestAnimationFrame(() => {
+                  document
+                    .getElementById("assessment-top")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }}
+            >
+              <BarChart3 size={16} />
+              {lang === "pl" ? "Podsumowanie" : "Summary"}
+            </button>
+          )}
 
           <div className="assessment-floating-page">
             <span>{lang === "pl" ? "STRONA" : "PAGE"}</span>
@@ -1489,7 +1513,7 @@ function Assessment({
             </button>
           </div>
 
-          {currentPage === pages.length - 1 && (
+          {result === null && currentPage === pages.length - 1 && (
             <button className="assessment-dock-submit" onClick={submitAssessment}>
               <CheckCircle2 size={17} />
               {lang === "pl" ? "Oddaj" : "Submit"}
@@ -1498,56 +1522,103 @@ function Assessment({
         </aside>
       )}
 
-      <div className="paper-controls panel">
+      {result !== null && (
         <div
-          className="zoom-controls"
+          className="assessment-result-toggle"
           role="group"
-          aria-label={lang === "pl" ? "Powiększenie arkusza" : "Paper zoom"}
+          aria-label={lang === "pl" ? "Widok wyników" : "Result view"}
         >
           <button
-            type="button"
-            onClick={() => setPaperZoom((value) => Math.max(70, value - 10))}
-            disabled={paperZoom <= 70}
-            aria-label={lang === "pl" ? "Pomniejsz arkusz" : "Zoom out"}
+            className={resultView === "summary" ? "active" : ""}
+            aria-pressed={resultView === "summary"}
+            onClick={() => {
+              setResultView("summary");
+              window.requestAnimationFrame(() => {
+                document
+                  .getElementById("assessment-top")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              });
+            }}
           >
-            <ZoomOut size={21} />
+            <BarChart3 size={16} />
+            {lang === "pl" ? "Odpowiedzi — skrót" : "Answer summary"}
           </button>
-          <span aria-live="polite">{paperZoom}%</span>
           <button
-            type="button"
-            onClick={() => setPaperZoom((value) => Math.min(120, value + 10))}
-            disabled={paperZoom >= 120}
-            aria-label={lang === "pl" ? "Powiększ arkusz" : "Zoom in"}
+            className={resultView === "paper" ? "active" : ""}
+            aria-pressed={resultView === "paper"}
+            onClick={() => {
+              setCurrentPage(0);
+              setResultView("paper");
+              window.requestAnimationFrame(() => {
+                document
+                  .getElementById("assessment-top")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              });
+            }}
           >
-            <ZoomIn size={21} />
+            <BookOpen size={16} />
+            {lang === "pl" ? "Odpowiedzi na arkuszu" : "Answers on paper"}
           </button>
         </div>
+      )}
 
-        <div className="paper-page-status">
-          <span>{lang === "pl" ? "Strona" : "Page"}</span>
-          <b>{currentPage + 1} / {pages.length}</b>
-          <small>
-            {firstQuestionIndex + 1}–{Math.min(firstQuestionIndex + page.length, questions.length)} / {questions.length} {tr.questions}
-          </small>
+      {(result === null || resultView === "paper") && (
+        <div className="paper-controls panel">
+          <div
+            className="zoom-controls"
+            role="group"
+            aria-label={lang === "pl" ? "Powiększenie arkusza" : "Paper zoom"}
+          >
+            <button
+              type="button"
+              onClick={() => setPaperZoom((value) => Math.max(70, value - 10))}
+              disabled={paperZoom <= 70}
+              aria-label={lang === "pl" ? "Pomniejsz arkusz" : "Zoom out"}
+            >
+              <ZoomOut size={21} />
+            </button>
+            <span aria-live="polite">{paperZoom}%</span>
+            <button
+              type="button"
+              onClick={() => setPaperZoom((value) => Math.min(120, value + 10))}
+              disabled={paperZoom >= 120}
+              aria-label={lang === "pl" ? "Powiększ arkusz" : "Zoom in"}
+            >
+              <ZoomIn size={21} />
+            </button>
+          </div>
+
+          <div className="paper-page-status">
+            <span>{lang === "pl" ? "Strona" : "Page"}</span>
+            <b>{currentPage + 1} / {pages.length}</b>
+            <small>
+              {firstQuestionIndex + 1}–{Math.min(firstQuestionIndex + page.length, questions.length)} / {questions.length} {tr.questions}
+            </small>
+          </div>
+
+          <span className="paper-controls-balance" aria-hidden="true" />
         </div>
+      )}
 
-        <span className="paper-controls-balance" aria-hidden="true" />
-      </div>
-
-      {result !== null && (
+      {result !== null && resultView === "summary" && (
         <AssessmentSummary
           lang={lang}
           questions={questions}
           answers={answers}
           onReviewPaper={() => {
-            document
-              .querySelector(".paper-viewport")
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            setCurrentPage(0);
+            setResultView("paper");
+            window.requestAnimationFrame(() => {
+              document
+                .getElementById("assessment-top")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
           }}
         />
       )}
 
-      <div className="paper-viewport">
+      {(result === null || resultView === "paper") && (
+      <div className={result !== null ? "paper-viewport result-review" : "paper-viewport"}>
         <div className="paper-stack single-page" style={paperStyle}>
           <section className="paper-page" key={currentPage}>
             <header className="paper-header">
@@ -1589,12 +1660,27 @@ function Assessment({
                 const numeric = Number(
                   (answers[question.id] ?? "").replace(",", "."),
                 );
+                const rawAnswer = answers[question.id] ?? "";
+                const answered = Boolean(rawAnswer.trim());
                 const ok =
+                  answered &&
                   Number.isFinite(numeric) &&
                   Math.abs(numeric - question.answer) < 0.011;
+                const reviewState = !answered
+                  ? "unanswered"
+                  : ok
+                    ? "correct"
+                    : "wrong";
 
                 return (
-                  <article className="paper-question" key={question.id}>
+                  <article
+                    className={
+                      result !== null
+                        ? `paper-question review-${reviewState}`
+                        : "paper-question"
+                    }
+                    key={question.id}
+                  >
                     <div className="paper-question-number">{questionIndex + 1}</div>
                     <div className="paper-question-body">
                       <div className="paper-question-head">
@@ -1605,7 +1691,18 @@ function Assessment({
                               ? lang === "pl" ? "OPISOWE" : "WORD"
                               : lang === "pl" ? "OTWARTE" : "OPEN"}
                         </span>
-                        <b>{question.points} {lang === "pl" ? "pkt" : "pts"}</b>
+                        <div className="paper-question-head-right">
+                          {result !== null && (
+                            <strong className={`paper-review-status ${reviewState}`}>
+                              {reviewState === "correct"
+                                ? lang === "pl" ? "✓ Poprawnie" : "✓ Correct"
+                                : reviewState === "wrong"
+                                  ? lang === "pl" ? "✕ Błędnie" : "✕ Incorrect"
+                                  : lang === "pl" ? "— Brak odpowiedzi" : "— Unanswered"}
+                            </strong>
+                          )}
+                          <b>{question.points} {lang === "pl" ? "pkt" : "pts"}</b>
+                        </div>
                       </div>
                       <MathProblem question={question} />
 
@@ -1615,11 +1712,21 @@ function Assessment({
                             <button
                               key={option.id}
                               disabled={result !== null}
-                              className={
+                              className={[
                                 answers[question.id] === String(option.value)
                                   ? "selected"
-                                  : ""
-                              }
+                                  : "",
+                                result !== null && option.value === question.answer
+                                  ? "correct-option"
+                                  : "",
+                                result !== null &&
+                                answers[question.id] === String(option.value) &&
+                                option.value !== question.answer
+                                  ? "wrong-option"
+                                  : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
                               onClick={() =>
                                 setQuestionAnswer(
                                   question.id,
@@ -1652,12 +1759,24 @@ function Assessment({
                             {question.answerSuffix && <span>{question.answerSuffix}</span>}
                           </div>
                           {result !== null && (
-                            <b className={ok ? "paper-ok" : "paper-wrong"}>
-                              {ok
-                                ? "✓"
-                                : (lang === "pl" ? "Poprawna: " : "Correct: ") +
-                                  question.answer +
-                                  (question.answerSuffix ?? "")}
+                            <b
+                              className={
+                                reviewState === "correct"
+                                  ? "paper-ok"
+                                  : reviewState === "wrong"
+                                    ? "paper-wrong"
+                                    : "paper-unanswered"
+                              }
+                            >
+                              {reviewState === "correct"
+                                ? lang === "pl" ? "✓ Poprawnie" : "✓ Correct"
+                                : reviewState === "wrong"
+                                  ? (lang === "pl" ? "Poprawna: " : "Correct: ") +
+                                    question.answer +
+                                    (question.answerSuffix ?? "")
+                                  : (lang === "pl" ? "Brak odpowiedzi • poprawna: " : "Unanswered • correct: ") +
+                                    question.answer +
+                                    (question.answerSuffix ?? "")}
                             </b>
                           )}
                         </div>
@@ -1666,11 +1785,24 @@ function Assessment({
                       <div className={question.kind === "word" ? "working-space large" : "working-space"} />
 
                       {result !== null && (
-                        <div className="paper-solution">
-                          <span>{question.solution}</span>
-                          {question.solutionMath && (
-                            <MathFormula tex={question.solutionMath} />
-                          )}
+                        <div className={`paper-review-note ${reviewState}`}>
+                          <div className="paper-review-note-head">
+                            <b>
+                              {reviewState === "correct"
+                                ? lang === "pl" ? "Dobrze rozwiązane" : "Solved correctly"
+                                : lang === "pl" ? "Co poprawić" : "What to improve"}
+                            </b>
+                            {reviewState !== "correct" && (
+                              <span>{question.hint}</span>
+                            )}
+                          </div>
+                          <div className="paper-review-solution">
+                            <strong>{lang === "pl" ? "Rozwiązanie" : "Solution"}</strong>
+                            <span>{question.solution}</span>
+                            {question.solutionMath && (
+                              <MathFormula tex={question.solutionMath} />
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1688,6 +1820,7 @@ function Assessment({
           </section>
         </div>
       </div>
+      )}
 
       {showAbortConfirm && (
         <div
