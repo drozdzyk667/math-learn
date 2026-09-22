@@ -1544,7 +1544,7 @@ function Assessment({
 
       {(result === null || resultView === "paper") && (
       <div className={result !== null ? "assessment-workspace result-review" : "assessment-workspace"}>
-        <div className={result !== null ? "paper-viewport result-review" : "paper-viewport"}
+        <div className={result !== null ? "paper-viewport result-review" : "paper-viewport"}>
         <div className="paper-stack single-page" style={paperStyle}>
           <section className="paper-page" key={currentPage}>
             <header className="paper-header">
