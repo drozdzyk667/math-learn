@@ -1531,22 +1531,7 @@ function Assessment({
           </small>
         </div>
 
-        <div className="paper-nav-buttons">
-          <button
-            className="secondary"
-            disabled={currentPage === 0}
-            onClick={() => goToPage(currentPage - 1)}
-          >
-            <ChevronLeft size={18} /> {lang === "pl" ? "Wstecz" : "Back"}
-          </button>
-          <button
-            className="primary"
-            disabled={currentPage === pages.length - 1}
-            onClick={() => goToPage(currentPage + 1)}
-          >
-            {lang === "pl" ? "Dalej" : "Next"} <ChevronRight size={18} />
-          </button>
-        </div>
+        <span className="paper-controls-balance" aria-hidden="true" />
       </div>
 
       {result !== null && (
@@ -1753,33 +1738,6 @@ function Assessment({
         </div>
       )}
 
-      <div className="assessment-bottom-nav">
-        <button
-          className="secondary"
-          disabled={currentPage === 0}
-          onClick={() => goToPage(currentPage - 1)}
-        >
-          <ChevronLeft size={18} />
-          {lang === "pl" ? "Poprzednia strona" : "Previous page"}
-        </button>
-
-        <div className="assessment-bottom-nav-right">
-          <button
-            className="primary"
-            disabled={currentPage === pages.length - 1}
-            onClick={() => goToPage(currentPage + 1)}
-          >
-            {lang === "pl" ? "Następna strona" : "Next page"}
-            <ChevronRight size={18} />
-          </button>
-
-          {currentPage === pages.length - 1 && result === null && (
-            <button className="primary finish" onClick={submitAssessment}>
-              {tr.finish} <CheckCircle2 size={18} />
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
