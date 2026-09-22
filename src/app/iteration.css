@@ -3980,3 +3980,58 @@
     justify-content: flex-start;
   }
 }
+
+
+/* Review navigation sits below the result-view toggle instead of overlapping it. */
+.assessment-review-nav-row {
+  width: min(1080px, 100%);
+  margin: -4px auto 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+.assessment-review-nav-row .assessment-floating-dock.review-mode {
+  position: sticky !important;
+  top: 82px !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  min-width: 300px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  grid-template-columns: minmax(120px, 1fr) 58px 92px !important;
+  grid-template-rows: none !important;
+  align-items: center;
+  gap: 7px;
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 34px rgba(12, 10, 28, .12);
+}
+.assessment-review-nav-row .assessment-review-back {
+  min-height: 40px;
+  white-space: nowrap;
+}
+.assessment-review-nav-row .assessment-floating-page {
+  min-height: 40px;
+  box-shadow: none;
+}
+.assessment-review-nav-row .assessment-floating-nav {
+  min-width: 92px;
+}
+
+@media (max-width: 700px) {
+  .assessment-review-nav-row {
+    width: 100%;
+  }
+  .assessment-review-nav-row .assessment-floating-dock.review-mode {
+    width: 100% !important;
+    min-width: 0;
+    grid-template-columns: minmax(110px, 1fr) 54px 88px !important;
+  }
+}
+
+@media (max-width: 460px) {
+  .assessment-review-nav-row .assessment-floating-dock.review-mode {
+    grid-template-columns: minmax(96px, 1fr) 48px 78px !important;
+  }
+}
