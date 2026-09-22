@@ -1390,7 +1390,6 @@ function Assessment({
   const [paperZoom, setPaperZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(0);
   const [showAbortConfirm, setShowAbortConfirm] = useState(false);
-  const [resultView, setResultView] = useState<"summary" | "paper">("summary");
   const paperStyle = {
     "--paper-scale": 1.4 * (paperZoom / 100),
   } as CSSProperties;
@@ -1412,7 +1411,6 @@ function Assessment({
   };
 
   const submitAssessment = () => {
-    setResultView("summary");
     setCurrentPage(0);
     onFinish();
     window.requestAnimationFrame(() => {
@@ -1501,95 +1499,7 @@ function Assessment({
         </aside>
       )}
 
-      {result !== null && (
-        <div
-          className="assessment-result-toggle"
-          role="group"
-          aria-label={lang === "pl" ? "Widok wyników" : "Result view"}
-        >
-          <button
-            className={resultView === "summary" ? "active" : ""}
-            aria-pressed={resultView === "summary"}
-            onClick={() => {
-              setResultView("summary");
-              window.requestAnimationFrame(() => {
-                document
-                  .getElementById("assessment-top")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              });
-            }}
-          >
-            <BarChart3 size={16} />
-            {lang === "pl" ? "Odpowiedzi — skrót" : "Answer summary"}
-          </button>
-          <button
-            className={resultView === "paper" ? "active" : ""}
-            aria-pressed={resultView === "paper"}
-            onClick={() => {
-              setCurrentPage(0);
-              setResultView("paper");
-              window.requestAnimationFrame(() => {
-                document
-                  .getElementById("assessment-top")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              });
-            }}
-          >
-            <BookOpen size={16} />
-            {lang === "pl" ? "Odpowiedzi na arkuszu" : "Answers on paper"}
-          </button>
-        </div>
-      )}
-
-      {result !== null && resultView === "paper" && (
-        <div className="assessment-review-nav-row">
-          <aside
-            className="assessment-floating-dock review-mode"
-            aria-label={lang === "pl" ? "Nawigacja sprawdzonego arkusza" : "Reviewed paper navigation"}
-          >
-            <button
-              className="assessment-review-back"
-              onClick={() => {
-                setResultView("summary");
-                window.requestAnimationFrame(() => {
-                  document
-                    .getElementById("assessment-top")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                });
-              }}
-            >
-              <BarChart3 size={16} />
-              {lang === "pl" ? "Podsumowanie" : "Summary"}
-            </button>
-
-            <div className="assessment-floating-page">
-              <span>{lang === "pl" ? "STRONA" : "PAGE"}</span>
-              <b>{currentPage + 1}/{pages.length}</b>
-            </div>
-
-            <div className="assessment-floating-nav">
-              <button
-                className="secondary"
-                disabled={currentPage === 0}
-                onClick={() => goToPage(currentPage - 1)}
-                aria-label={lang === "pl" ? "Poprzednia strona" : "Previous page"}
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                className="primary"
-                disabled={currentPage === pages.length - 1}
-                onClick={() => goToPage(currentPage + 1)}
-                aria-label={lang === "pl" ? "Następna strona" : "Next page"}
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </aside>
-        </div>
-      )}
-
-      {(result === null || resultView === "paper") && (
+      {result === null && (
         <div className="paper-controls panel">
           <div
             className="zoom-controls"
@@ -1627,51 +1537,16 @@ function Assessment({
         </div>
       )}
 
-      {result !== null && resultView === "summary" && (
+      {result !== null && (
         <AssessmentSummary
           lang={lang}
           questions={questions}
           answers={answers}
-          onReviewPaper={() => {
-            setCurrentPage(0);
-            setResultView("paper");
-            window.requestAnimationFrame(() => {
-              document
-                .getElementById("assessment-top")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-            });
-          }}
         />
       )}
 
-      {result !== null && resultView === "paper" && (
-        <div className="assessment-paper-review-head">
-          <div>
-            <span className="eyebrow">
-              <CheckCircle2 size={14} />
-              {lang === "pl" ? "SPRAWDZONY ARKUSZ" : "MARKED PAPER"}
-            </span>
-            <b>
-              {lang === "pl"
-                ? "Przejrzyj każde zadanie strona po stronie"
-                : "Review every question page by page"}
-            </b>
-            <small>
-              {lang === "pl"
-                ? "Strzałki w ruchomym panelu pozwalają przejść przez cały arkusz."
-                : "Use the arrows in the floating dock to review the entire paper."}
-            </small>
-          </div>
-          <div className="assessment-review-legend" aria-label={lang === "pl" ? "Legenda wyniku" : "Result legend"}>
-            <span className="correct">{lang === "pl" ? "✓ Poprawnie" : "✓ Correct"}</span>
-            <span className="wrong">{lang === "pl" ? "✕ Błędnie" : "✕ Incorrect"}</span>
-            <span className="unanswered">{lang === "pl" ? "— Brak odpowiedzi" : "— Unanswered"}</span>
-          </div>
-        </div>
-      )}
-
-      {(result === null || resultView === "paper") && (
-      <div className={result !== null ? "paper-viewport result-review" : "paper-viewport"}>
+      {result === null && (
+      <div className="paper-viewport">
         <div className="paper-stack single-page" style={paperStyle}>
           <section className="paper-page" key={currentPage}>
             <header className="paper-header">
