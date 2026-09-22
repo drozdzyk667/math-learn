@@ -1390,6 +1390,7 @@ function Assessment({
   const [paperZoom, setPaperZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(0);
   const [showAbortConfirm, setShowAbortConfirm] = useState(false);
+  const [resultView, setResultView] = useState<"summary" | "paper">("summary");
   const paperStyle = {
     "--paper-scale": 1.4 * (paperZoom / 100),
   } as CSSProperties;
@@ -1412,6 +1413,7 @@ function Assessment({
 
   const submitAssessment = () => {
     setCurrentPage(0);
+    setResultView("summary");
     onFinish();
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
@@ -1488,17 +1490,61 @@ function Assessment({
         </div>
       )}
 
-      {result !== null && (
+      {result !== null && resultView === "summary" && (
         <AssessmentSummary
           lang={lang}
           questions={questions}
           answers={answers}
+          onReviewPaper={() => {
+            setCurrentPage(0);
+            setResultView("paper");
+            window.requestAnimationFrame(() => {
+              document
+                .getElementById("assessment-top")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          }}
         />
       )}
 
-      {result === null && (
-      <div className="assessment-workspace">
-        <div className="paper-viewport">
+      {result !== null && resultView === "paper" && (
+        <div className="assessment-paper-review-head">
+          <div>
+            <span className="eyebrow">
+              <CheckCircle2 size={14} />
+              {lang === "pl" ? "SPRAWDZONY ARKUSZ" : "MARKED PAPER"}
+            </span>
+            <b>
+              {lang === "pl"
+                ? "Błędy i poprawne rozwiązania bezpośrednio na arkuszu"
+                : "Mistakes and correct solutions directly on the paper"}
+            </b>
+            <small>
+              {lang === "pl"
+                ? "Czerwone oznaczenia pokazują błędne odpowiedzi, zielone poprawne, a żółte pominięte."
+                : "Red marks incorrect answers, green correct ones and yellow unanswered items."}
+            </small>
+          </div>
+          <button
+            className="secondary"
+            onClick={() => {
+              setResultView("summary");
+              window.requestAnimationFrame(() => {
+                document
+                  .getElementById("assessment-top")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              });
+            }}
+          >
+            <BarChart3 size={16} />
+            {lang === "pl" ? "Wróć do podsumowania" : "Back to summary"}
+          </button>
+        </div>
+      )}
+
+      {(result === null || resultView === "paper") && (
+      <div className={result !== null ? "assessment-workspace result-review" : "assessment-workspace"}>
+        <div className={result !== null ? "paper-viewport result-review" : "paper-viewport"}
         <div className="paper-stack single-page" style={paperStyle}>
           <section className="paper-page" key={currentPage}>
             <header className="paper-header">
@@ -1704,16 +1750,33 @@ function Assessment({
           className="assessment-floating-dock"
           aria-label={lang === "pl" ? "Nawigacja arkusza" : "Paper navigation"}
         >
-          <div className="assessment-floating-timer">
-            <Clock3 size={17} />
-            <b>
-              {timer !== undefined
-                ? String(Math.floor(timer / 60)).padStart(2, "0") +
-                  ":" +
-                  String(timer % 60).padStart(2, "0")
-                : durationLabel}
-            </b>
-          </div>
+          {result === null ? (
+            <div className="assessment-floating-timer">
+              <Clock3 size={17} />
+              <b>
+                {timer !== undefined
+                  ? String(Math.floor(timer / 60)).padStart(2, "0") +
+                    ":" +
+                    String(timer % 60).padStart(2, "0")
+                  : durationLabel}
+              </b>
+            </div>
+          ) : (
+            <button
+              className="assessment-review-back"
+              onClick={() => {
+                setResultView("summary");
+                window.requestAnimationFrame(() => {
+                  document
+                    .getElementById("assessment-top")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }}
+            >
+              <BarChart3 size={16} />
+              {lang === "pl" ? "Podsumowanie" : "Summary"}
+            </button>
+          )}
 
           <div className="assessment-floating-page">
             <span>{lang === "pl" ? "STRONA" : "PAGE"}</span>
@@ -1739,7 +1802,7 @@ function Assessment({
             </button>
           </div>
 
-          {currentPage === pages.length - 1 && (
+          {result === null && currentPage === pages.length - 1 && (
             <button className="assessment-dock-submit" onClick={submitAssessment}>
               <CheckCircle2 size={17} />
               {lang === "pl" ? "Oddaj" : "Submit"}
