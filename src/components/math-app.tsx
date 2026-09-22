@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -1391,8 +1390,6 @@ function Assessment({
   const [paperZoom, setPaperZoom] = useState(100);
   const [currentPage, setCurrentPage] = useState(0);
   const [showAbortConfirm, setShowAbortConfirm] = useState(false);
-  const paperControlsRef = useRef<HTMLDivElement | null>(null);
-  const [dockTop, setDockTop] = useState(226);
   const paperStyle = {
     "--paper-scale": 1.4 * (paperZoom / 100),
   } as CSSProperties;
@@ -1425,23 +1422,7 @@ function Assessment({
     });
   };
 
-  useEffect(() => {
-    if (result !== null) return;
-
-    const syncDockPosition = () => {
-      if (window.innerWidth <= 1500) return;
-      const controls = paperControlsRef.current;
-      if (!controls) return;
-
-      const controlsBottom = controls.getBoundingClientRect().bottom;
-      setDockTop(Math.max(18, Math.round(controlsBottom + 14)));
-    };
-
-    const frame = window.requestAnimationFrame(syncDockPosition);
-    window.addEventListener("resize", syncDockPosition);
-    window.addEventListener("scroll", syncDockPosition, { passive: true });
-
-    return () => {
+  return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", syncDockPosition);
       window.removeEventListener("scroll", syncDockPosition);
@@ -1477,57 +1458,7 @@ function Assessment({
       </div>
 
       {result === null && (
-        <aside
-          className="assessment-floating-dock"
-          style={{ "--assessment-dock-top": dockTop + "px" } as CSSProperties}
-          aria-label={lang === "pl" ? "Nawigacja arkusza" : "Paper navigation"}
-        >
-          <div className="assessment-floating-timer">
-            <Clock3 size={17} />
-            <b>
-              {timer !== undefined
-                ? String(Math.floor(timer / 60)).padStart(2, "0") +
-                  ":" +
-                  String(timer % 60).padStart(2, "0")
-                : durationLabel}
-            </b>
-          </div>
-
-          <div className="assessment-floating-page">
-            <span>{lang === "pl" ? "STRONA" : "PAGE"}</span>
-            <b>{currentPage + 1}/{pages.length}</b>
-          </div>
-
-          <div className="assessment-floating-nav">
-            <button
-              className="secondary"
-              disabled={currentPage === 0}
-              onClick={() => goToPage(currentPage - 1)}
-              aria-label={lang === "pl" ? "Poprzednia strona" : "Previous page"}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              className="primary"
-              disabled={currentPage === pages.length - 1}
-              onClick={() => goToPage(currentPage + 1)}
-              aria-label={lang === "pl" ? "Następna strona" : "Next page"}
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-
-          {currentPage === pages.length - 1 && (
-            <button className="assessment-dock-submit" onClick={submitAssessment}>
-              <CheckCircle2 size={17} />
-              {lang === "pl" ? "Oddaj" : "Submit"}
-            </button>
-          )}
-        </aside>
-      )}
-
-      {result === null && (
-        <div ref={paperControlsRef} className="paper-controls panel">
+        <div className="paper-controls panel">
           <div
             className="zoom-controls"
             role="group"
@@ -1561,6 +1492,57 @@ function Assessment({
           </div>
 
           <span className="paper-controls-balance" aria-hidden="true" />
+        </div>
+      )}
+
+      {result === null && (
+        <div className="assessment-sticky-dock-row">
+          <aside
+                    className="assessment-floating-dock"
+                    aria-label={lang === "pl" ? "Nawigacja arkusza" : "Paper navigation"}
+                  >
+                    <div className="assessment-floating-timer">
+                      <Clock3 size={17} />
+                      <b>
+                        {timer !== undefined
+                          ? String(Math.floor(timer / 60)).padStart(2, "0") +
+                            ":" +
+                            String(timer % 60).padStart(2, "0")
+                          : durationLabel}
+                      </b>
+                    </div>
+          
+                    <div className="assessment-floating-page">
+                      <span>{lang === "pl" ? "STRONA" : "PAGE"}</span>
+                      <b>{currentPage + 1}/{pages.length}</b>
+                    </div>
+          
+                    <div className="assessment-floating-nav">
+                      <button
+                        className="secondary"
+                        disabled={currentPage === 0}
+                        onClick={() => goToPage(currentPage - 1)}
+                        aria-label={lang === "pl" ? "Poprzednia strona" : "Previous page"}
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      <button
+                        className="primary"
+                        disabled={currentPage === pages.length - 1}
+                        onClick={() => goToPage(currentPage + 1)}
+                        aria-label={lang === "pl" ? "Następna strona" : "Next page"}
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+          
+                    {currentPage === pages.length - 1 && (
+                      <button className="assessment-dock-submit" onClick={submitAssessment}>
+                        <CheckCircle2 size={17} />
+                        {lang === "pl" ? "Oddaj" : "Submit"}
+                      </button>
+                    )}
+                  </aside>
         </div>
       )}
 
