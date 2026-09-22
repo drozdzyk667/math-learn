@@ -187,12 +187,21 @@ for (const width of [1920, 1440, 1280]) {
     expect(layout.dockTop).toBe("0px");
     expect(layout.dockBottom).toBe("auto");
 
+    const topbar = page.locator(".topbar");
+    const topbarBox = await topbar.boundingBox();
+    expect(topbarBox).not.toBeNull();
+    expect(topbarBox!.height).toBe(68);
+
     await page.evaluate(() => window.scrollTo(0, 700));
 
     await expect.poll(async () => {
       const box = await dock.boundingBox();
       return box?.y ?? 9999;
-    }).toBeLessThanOrEqual(42);
+    }).toBeGreaterThanOrEqual(topbarBox!.height + 10);
+
+    const stuckDockBox = await dock.boundingBox();
+    expect(stuckDockBox).not.toBeNull();
+    expect(stuckDockBox!.y).toBeLessThanOrEqual(topbarBox!.height + 18);
 
     const previous = dock.getByRole("button", { name: /Poprzednia strona/i });
     const next = dock.getByRole("button", { name: /Następna strona/i });
@@ -209,6 +218,27 @@ for (const width of [1920, 1440, 1280]) {
     await expect(dock.getByRole("button", { name: /Oddaj/i })).toBeVisible();
   });
 }
+
+
+
+test("mobile assessment dock stays below sticky app navigation", async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 900 });
+  await page.goto("/pl/tests");
+  await page.getByRole("button", { name: /Zobacz wstęp/i }).first().click();
+  await page.getByRole("button", { name: /Start — otwórz arkusz/i }).click();
+
+  const dock = page.locator(".assessment-floating-dock");
+  const sidebar = page.locator(".sidebar");
+
+  await page.evaluate(() => window.scrollTo(0, 700));
+
+  const sidebarBox = await sidebar.boundingBox();
+  const dockBox = await dock.boundingBox();
+
+  expect(sidebarBox).not.toBeNull();
+  expect(dockBox).not.toBeNull();
+  expect(dockBox!.y).toBeGreaterThanOrEqual(sidebarBox!.y + sidebarBox!.height + 6);
+});
 
 test("function laboratory exposes multiple stable graph experiments", async ({ page }) => {
   await page.goto("/pl/lab");
